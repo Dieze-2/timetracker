@@ -244,18 +244,18 @@
             letter-spacing: 1px;
         }
 
-        /* CARTES RESPONSIVE SANS CHEVAUCHEMENT */
+        /* CARTES EN COLONNE VERTICALE (pas de chevauchement) */
         .time-rows {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 14px;
         }
 
         .time-card {
             background: var(--bg-input);
             border: 1.5px solid var(--border-color);
             border-radius: 12px;
-            padding: 14px;
+            padding: 16px;
             transition: all 0.2s ease;
         }
 
@@ -263,38 +263,40 @@
             border-color: var(--border-hover);
         }
 
-        .time-inputs-row {
+        /* INPUTS EMPILÉS VERTICALEMENT */
+        .time-inputs-column {
             display: flex;
-            gap: 10px;
-            margin-bottom: 12px;
+            flex-direction: column;
+            gap: 14px;
+            margin-bottom: 14px;
         }
 
         .time-input-group {
-            flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 7px;
         }
 
         .time-input-label {
-            font-size: 9px;
-            font-weight: 600;
+            font-size: 10px;
+            font-weight: 700;
             color: var(--text-secondary);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
             padding-left: 2px;
         }
 
         .time-card input[type="time"] {
             width: 100%;
-            padding: 10px 8px;
-            font-size: 15px;
+            padding: 14px 12px;
+            font-size: 16px;
             background: var(--bg-secondary);
             border: 1.5px solid var(--border-color);
-            border-radius: 8px;
+            border-radius: 10px;
             color: var(--text-primary);
             font-weight: 600;
             transition: all 0.2s ease;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Mono', 'Courier New', monospace;
         }
 
         .time-card input[type="time"]:focus {
@@ -307,15 +309,15 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-top: 12px;
+            padding-top: 14px;
             border-top: 1px solid var(--border-color);
         }
 
         .duration-display {
             display: flex;
             align-items: center;
-            gap: 6px;
-            font-size: 13px;
+            gap: 7px;
+            font-size: 14px;
             font-weight: 700;
             color: var(--accent-primary);
             font-family: 'SF Mono', 'Courier New', monospace;
@@ -323,18 +325,18 @@
 
         .duration-display::before {
             content: '⏱️';
-            font-size: 14px;
+            font-size: 16px;
         }
 
         .delete-btn {
             background: transparent;
             border: 1.5px solid var(--error);
-            padding: 6px 14px;
+            padding: 8px 16px;
             border-radius: 8px;
             color: var(--error);
             font-weight: 600;
             cursor: pointer;
-            font-size: 11px;
+            font-size: 12px;
             touch-action: manipulation;
             transition: all 0.2s ease;
             white-space: nowrap;
@@ -544,12 +546,7 @@
             }
 
             .time-card {
-                padding: 12px;
-            }
-
-            .time-card input[type="time"] {
-                font-size: 14px;
-                padding: 9px 6px;
+                padding: 14px;
             }
         }
     </style>
@@ -694,7 +691,7 @@
             card.className = 'time-card';
             card.id = `row${rowCount}`;
             card.innerHTML = `
-                <div class="time-inputs-row">
+                <div class="time-inputs-column">
                     <div class="time-input-group">
                         <label class="time-input-label">Début</label>
                         <input type="time" id="debut${rowCount}" tabindex="${tabStart}" onchange="calculate()">
