@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Suivi intelligent de vos horaires de travail">
+    <meta name="theme-color" content="#26A69A">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TimeTracker">
+    
+    <!-- Favicon inline (SVG) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%2326A69A;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%2300796B;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' fill='url(%23grad)' rx='20'/%3E%3Ctext x='50' y='70' font-size='60' text-anchor='middle' fill='white'%3E⚡%3C/text%3E%3C/svg%3E">
+    
+    <!-- Apple Touch Icon inline -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%2326A69A;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%2300796B;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' fill='url(%23grad)' rx='40'/%3E%3Ctext x='90' y='130' font-size='110' text-anchor='middle' fill='white'%3E⚡%3C/text%3E%3C/svg%3E">
+    
+    <title>⚡ Time Tracker</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --teal-50: #E0F2F1;
+            --teal-100: #B2DFDB;
+            --teal-200: #80CBC4;
+            --teal-300: #4DB6AC;
+            --teal-400: #26A69A;
+            --teal-500: #009688;
+            --teal-600: #00897B;
+            --teal-700: #00796B;
+            --teal-800: #00695C;
+            --teal-900: #004D40;
+            
+            --bg-primary: #0A0E1A;
+            --bg-secondary: #060911;
+            --bg-card: rgba(0, 105, 92, 0.08);
+            --bg-input: rgba(0, 121, 107, 0.1);
+            
+            --accent-primary: #26A69A;
+            --accent-secondary: #00897B;
+            --accent-light: #4DB6AC;
+            --accent-glow: #80CBC4;
+            
+            --text-primary: #E0F2F1;
+            --text-secondary: #80CBC4;
+            --border-color: rgba(38, 166, 154, 0.2);
+            --border-hover: rgba(77, 182, 172, 0.5);
+            --glow: rgba(77, 182, 172, 0.15);
+            
+            --success: #26A69A;
+            --error: #EF5350;
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #F1F8F7;
+            --bg-secondary: #FFFFFF;
+            --bg-card: rgba(255, 255, 255, 0.8);
+            --bg-input: rgba(255, 255, 255, 0.95);
+            
+            --accent-primary: #00897B;
+            --accent-secondary: #00796B;
+            --accent-light: #26A69A;
+            --accent-glow: #4DB6AC;
+            
+            --text-primary: #004D40;
+            --text-secondary: #00695C;
+            --border-color: rgba(0, 137, 123, 0.25);
+            --border-hover: rgba(0, 137, 123, 0.5);
+            --glow: rgba(38, 166, 154, 0.12);
+            
+            --success: #00897B;
+            --error: #E53935;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            padding: 20px;
+            padding-bottom: env(safe-area-inset-bottom);
+            overflow-x: hidden;
+            position: relative;
+            color: var(--text-primary);
+            transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -10%;
+            left: -10%;
+            width: 120%;
+            height: 120%;
+            background: 
+                radial-gradient(ellipse 800px 600px at 20% 30%, var(--teal-600) 0%, transparent 50%),
+                radial-gradient(ellipse 700px 700px at 80% 70%, var(--teal-500) 0%, transparent 50%),
+                radial-gradient(ellipse 600px 800px at 50% 50%, var(--teal-400) 0%, transparent 50%);
+            opacity: 0.12;
+            z-index: -3;
+            filter: blur(60px);
+            animation: meshMove 20s ease-in-out infinite;
+        }
+
+        [data-theme="light"] body::before {
+            opacity: 0.18;
+            filter: blur(70px);
+        }
+
+        @keyframes meshMove {
+            0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+            25% { transform: translate(5%, 3%) rotate(1deg) scale(1.05); }
+            50% { transform: translate(-3%, 5%) rotate(-1deg) scale(0.95); }
+            75% { transform: translate(4%, -2%) rotate(0.5deg) scale(1.02); }
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, transparent 0%, var(--teal-700) 100%);
+            opacity: 0.03;
+            z-index: -2;
+            mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120'%3E%3Cpath d='M0,50 Q300,20 600,50 T1200,50 L1200,120 L0,120 Z' fill='white'/%3E%3C/svg%3E");
+            mask-size: 100% 100%;
+            mask-repeat: no-repeat;
+            animation: waveMove 15s ease-in-out infinite;
+        }
+
+        @keyframes waveMove {
+            0%, 100% { transform: translateX(0) translateY(0); }
+            50% { transform: translateX(-5%) translateY(-3%); }
+        }
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--accent-glow);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-glow);
+            opacity: 0;
+        }
+
+        .particle:nth-child(1) { left: 10%; animation: float1 12s ease-in-out infinite; }
+        .particle:nth-child(2) { left: 25%; animation: float2 15s ease-in-out infinite 2s; }
+        .particle:nth-child(3) { left: 40%; animation: float3 13s ease-in-out infinite 4s; }
+        .particle:nth-child(4) { left: 60%; animation: float1 14s ease-in-out infinite 1s; }
+        .particle:nth-child(5) { left: 75%; animation: float2 16s ease-in-out infinite 3s; }
+        .particle:nth-child(6) { left: 90%; animation: float3 11s ease-in-out infinite 5s; }
+
+        @keyframes float1 {
+            0% { bottom: -10%; opacity: 0; transform: translateX(0) scale(1); }
+            10% { opacity: 0.6; }
+            50% { transform: translateX(30px) scale(1.2); }
+            90% { opacity: 0.6; }
+            100% { bottom: 110%; opacity: 0; transform: translateX(-30px) scale(0.8); }
+        }
+
+        @keyframes float2 {
+            0% { bottom: -10%; opacity: 0; transform: translateX(0) scale(1); }
+            10% { opacity: 0.5; }
+            50% { transform: translateX(-40px) scale(1.3); }
+            90% { opacity: 0.5; }
+            100% { bottom: 110%; opacity: 0; transform: translateX(20px) scale(0.7); }
+        }
+
+        @keyframes float3 {
+            0% { bottom: -10%; opacity: 0; transform: translateX(0) scale(1); }
+            10% { opacity: 0.7; }
+            50% { transform: translateX(20px) scale(1.1); }
+            90% { opacity: 0.7; }
+            100% { bottom: 110%; opacity: 0; transform: translateX(-40px) scale(0.9); }
+        }
+
+        .aurora {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            pointer-events: none;
+            background: linear-gradient(90deg, transparent 0%, var(--teal-500) 20%, var(--teal-400) 40%, transparent 60%, var(--teal-600) 80%, transparent 100%);
+            opacity: 0.08;
+            filter: blur(80px);
+            animation: auroraMove 25s ease-in-out infinite;
+        }
+
+        [data-theme="light"] .aurora {
+            opacity: 0.12;
+            filter: blur(100px);
+        }
+
+        @keyframes auroraMove {
+            0%, 100% { transform: translateX(-10%) skewX(-5deg); }
+            50% { transform: translateX(10%) skewX(5deg); }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 35px;
+            padding: 20px 0;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+
+        h1::before {
+            content: '⚡ ';
+            color: var(--accent-primary);
+            filter: drop-shadow(0 0 10px var(--accent-primary));
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { filter: drop-shadow(0 0 10px var(--accent-primary)); }
+            50% { filter: drop-shadow(0 0 20px var(--accent-light)); }
+        }
+
+        .theme-toggle {
+            background: var(--bg-card);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--border-color);
+            padding: 11px 22px;
+            border-radius: 14px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .theme-toggle:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-hover);
+            box-shadow: 0 8px 30px var(--glow), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .params-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .param-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 22px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .param-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: 0 8px 32px var(--glow), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transform: translateY(-3px);
+        }
+
+        .param-card label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.3px;
+        }
+
+        input[type="time"], input[type="number"] {
+            width: 100%;
+            padding: 13px 16px;
+            border: 1.5px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            background: var(--bg-input);
+            color: var(--text-primary);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+            backdrop-filter: blur(20px);
+        }
+
+        input[type="time"]:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 4px var(--glow), 0 4px 12px var(--glow);
+        }
+
+        .table-container {
+            background: var(--bg-card);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 28px;
+            margin-bottom: 22px;
+            overflow-x: auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 10px;
+        }
+
+        thead th {
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 700;
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1.3px;
+            border-bottom: 1.5px solid var(--border-color);
+        }
+
+        tbody tr {
+            background: var(--bg-input);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(20px);
+        }
+
+        tbody tr:hover {
+            background: rgba(38, 166, 154, 0.08);
+            transform: translateX(4px);
+            box-shadow: -4px 0 0 var(--accent-primary);
+        }
+
+        tbody td {
+            padding: 14px 16px;
+            border-top: 1px solid transparent;
+            border-bottom: 1px solid transparent;
+        }
+
+        tbody td:first-child {
+            border-left: 1px solid transparent;
+            border-top-left-radius: 12px;
+            border-bottom-left-radius: 12px;
+        }
+
+        tbody td:last-child {
+            border-right: 1px solid transparent;
+            border-top-right-radius: 12px;
+            border-bottom-right-radius: 12px;
+        }
+
+        tbody tr:hover td {
+            border-color: var(--border-color);
+        }
+
+        tbody td input {
+            background: var(--bg-secondary);
+            border-color: var(--border-color);
+        }
+
+        .duration-cell {
+            text-align: center;
+            font-weight: 700;
+            font-size: 15px;
+            color: var(--accent-primary);
+            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+            text-shadow: 0 0 20px var(--glow);
+        }
+
+        .delete-btn {
+            background: transparent;
+            border: 1.5px solid var(--error);
+            padding: 7px 14px;
+            border-radius: 10px;
+            color: var(--error);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 12px;
+        }
+
+        .delete-btn:hover {
+            background: var(--error);
+            color: white;
+            transform: scale(1.08);
+            box-shadow: 0 4px 16px rgba(239, 83, 80, 0.3);
+        }
+
+        .buttons {
+            display: flex;
+            gap: 14px;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 13px 26px;
+            border: none;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-clear {
+            background: transparent;
+            color: var(--error);
+            border: 2px solid var(--error);
+        }
+
+        .btn-clear:hover {
+            background: var(--error);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(239, 83, 80, 0.3);
+        }
+
+        .btn-save {
+            background: transparent;
+            color: var(--success);
+            border: 2px solid var(--success);
+        }
+
+        .btn-save:hover {
+            background: var(--success);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(38, 166, 154, 0.4);
+        }
+
+        .results-section {
+            background: var(--bg-card);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--border-color);
+            padding: 28px;
+            border-radius: 20px;
+            margin-bottom: 22px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .results-section h2 {
+            margin-bottom: 24px;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .results-section h2::before {
+            content: '';
+            width: 4px;
+            height: 22px;
+            background: linear-gradient(180deg, var(--accent-light), var(--accent-secondary));
+            border-radius: 2px;
+            box-shadow: 0 0 10px var(--accent-primary);
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        .result-card {
+            background: var(--bg-input);
+            backdrop-filter: blur(20px);
+            border: 1.5px solid var(--border-color);
+            padding: 20px;
+            border-radius: 16px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        }
+
+        .result-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: 0 8px 32px var(--glow), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            transform: translateY(-4px);
+        }
+
+        .result-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+        }
+
+        .result-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+        }
+
+        .result-description {
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+
+        .positive { color: var(--success); }
+        .negative { color: var(--error); }
+
+        .departure-card {
+            background: linear-gradient(135deg, rgba(38, 166, 154, 0.1), rgba(0, 137, 123, 0.1));
+            border-color: var(--accent-primary);
+        }
+
+        .departure-card .result-value {
+            color: var(--accent-primary);
+            font-size: 28px;
+            text-shadow: 0 0 30px var(--glow);
+        }
+
+        .highlight {
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.85; transform: scale(0.98); }
+        }
+
+        .info-message {
+            background: var(--bg-input);
+            backdrop-filter: blur(20px);
+            border-left: 3px solid var(--accent-primary);
+            padding: 16px 22px;
+            border-radius: 12px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            line-height: 1.6;
+            box-shadow: -3px 0 0 var(--glow);
+        }
+
+        .info-message strong {
+            color: var(--accent-primary);
+        }
+
+        .hidden { display: none; }
+
+        @media (max-width: 1024px) {
+            .result-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 0 10px; }
+            h1 { font-size: 22px; }
+            table { font-size: 13px; }
+            .result-grid { grid-template-columns: 1fr; }
+            .result-value { font-size: 20px; }
+            .departure-card .result-value { font-size: 24px; }
+            .btn { padding: 11px 20px; font-size: 13px; }
+        }
+
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg-secondary); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 10px;
+            box-shadow: 0 0 10px var(--glow);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, var(--accent-light), var(--accent-primary));
+        }
+
+        .btn-add-mini {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            font-size: 22px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(38, 166, 154, 0.3), 0 0 0 0 var(--accent-primary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-add-mini:hover {
+            transform: scale(1.12) rotate(90deg);
+            box-shadow: 0 8px 32px rgba(38, 166, 154, 0.5), 0 0 0 8px var(--glow);
+            background: var(--accent-light);
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+
+        .table-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+        }
+
+        /* Bouton install PWA */
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(38, 166, 154, 0.4);
+            z-index: 1000;
+            animation: slideInUp 0.5s ease;
+            font-size: 14px;
+        }
+
+        .install-prompt:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 30px rgba(38, 166, 154, 0.6);
+        }
+
+        @keyframes slideInUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(20px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <div class="aurora"></div>
+
+    <div class="container">
+        <header>
+            <h1>Time Tracker</h1>
+            <button class="theme-toggle" onclick="toggleTheme()">🌓 Thème</button>
+        </header>
+
+        <div class="params-section">
+            <div class="param-card">
+                <label for="tempsDu">⏱️ Temps dû</label>
+                <input type="number" id="tempsDu" step="0.01" value="8.26" onchange="calculate()" tabindex="100">
+            </div>
+            <div class="param-card">
+                <label for="pause">☕ Pause</label>
+                <input type="number" id="pause" step="0.01" value="0.34" onchange="calculate()" tabindex="101">
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header">
+                <span class="table-title">📋 Horaires</span>
+                <button class="btn-add-mini" onclick="addRow()" tabindex="102" title="Ajouter une ligne">+</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Début</th>
+                        <th>Fin</th>
+                        <th>Durée</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+
+        <div class="buttons">
+            <button class="btn btn-clear" onclick="clearAll()" tabindex="103">🗑️ Effacer</button>
+            <button class="btn btn-save" onclick="saveData()" tabindex="104">💾 Sauvegarder</button>
+        </div>
+
+        <div class="results-section">
+            <h2>Tableau de bord</h2>
+            <div class="result-grid">
+                <div class="result-card">
+                    <div class="result-label">Total travail</div>
+                    <div class="result-value" id="dureeTravail">0.00 h</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">Différence</div>
+                    <div class="result-value" id="difference">0.00 h</div>
+                    <div class="result-description">Travail + Pause - Dû</div>
+                </div>
+                <div class="result-card departure-card" id="departureCard1">
+                    <div class="result-label">🚪 Partir à</div>
+                    <div class="result-value highlight" id="partirHeures">--:--</div>
+                    <div class="result-description">Pour faire ses heures</div>
+                </div>
+                <div class="result-card departure-card" id="departureCard2">
+                    <div class="result-label">⏰ Limite 9h</div>
+                    <div class="result-value highlight" id="partir9h">--:--</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-message">
+            💡 <strong>Info :</strong> Les horaires de départ s'affichent uniquement quand vous avez une ligne avec une heure de début sans heure de fin.
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // SERVICE WORKER INLINE
+        // ============================================
+        if ('serviceWorker' in navigator) {
+            const swCode = `
+                const CACHE_NAME = 'timetracker-v1.0.0';
+                self.addEventListener('install', e => {
+                    e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(['/'])));
+                    self.skipWaiting();
+                });
+                self.addEventListener('activate', e => {
+                    e.waitUntil(caches.keys().then(keys => Promise.all(
+                        keys.map(key => key !== CACHE_NAME && caches.delete(key))
+                    )));
+                    self.clients.claim();
+                });
+                self.addEventListener('fetch', e => {
+                    e.respondWith(
+                        caches.match(e.request).then(res => res || fetch(e.request).then(fetchRes => 
+                            caches.open(CACHE_NAME).then(cache => {
+                                cache.put(e.request, fetchRes.clone());
+                                return fetchRes;
+                            })
+                        ).catch(() => caches.match('/')))
+                    );
+                });
+            `;
+            
+            const blob = new Blob([swCode], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(blob);
+            
+            navigator.serviceWorker.register(swUrl).then(reg => {
+                console.log('✅ Service Worker enregistré');
+            }).catch(err => console.log('❌ Échec SW:', err));
+        }
+
+        // ============================================
+        // MANIFEST INLINE
+        // ============================================
+        const manifestData = {
+            name: "Time Tracker Pro",
+            short_name: "TimeTracker",
+            description: "Suivi intelligent de vos horaires de travail",
+            start_url: "./",
+            display: "standalone",
+            background_color: "#0A0E1A",
+            theme_color: "#26A69A",
+            orientation: "portrait-primary",
+            icons: [{
+                src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%2326A69A'/%3E%3Cstop offset='100%25' style='stop-color:%2300796B'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='512' height='512' fill='url(%23g)' rx='100'/%3E%3Ctext x='256' y='380' font-size='320' text-anchor='middle' fill='white'%3E⚡%3C/text%3E%3C/svg%3E",
+                sizes: "512x512",
+                type: "image/svg+xml",
+                purpose: "any maskable"
+            }]
+        };
+        
+        const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
+        const manifestURL = URL.createObjectURL(manifestBlob);
+        const linkManifest = document.createElement('link');
+        linkManifest.rel = 'manifest';
+        linkManifest.href = manifestURL;
+        document.head.appendChild(linkManifest);
+
+        // ============================================
+        // PROMPT D'INSTALLATION PWA
+        // ============================================
+        let deferredPrompt;
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            showInstallPrompt();
+        });
+
+        function showInstallPrompt() {
+            const btn = document.createElement('button');
+            btn.className = 'install-prompt';
+            btn.textContent = '📲 Installer l\'app';
+            btn.onclick = async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log('Installation:', outcome);
+                    deferredPrompt = null;
+                    btn.style.animation = 'fadeOut 0.5s ease';
+                    setTimeout(() => btn.remove(), 500);
+                }
+            };
+            document.body.appendChild(btn);
+            setTimeout(() => {
+                btn.style.animation = 'fadeOut 0.5s ease';
+                setTimeout(() => btn.remove(), 500);
+            }, 15000);
+        }
+
+        window.addEventListener('appinstalled', () => {
+            console.log('✅ App installée');
+            deferredPrompt = null;
+        });
+
+        // ============================================
+        // LOGIQUE TIME TRACKER
+        // ============================================
+        let rowCount = 0;
+        let currentTabIndex = 1;
+
+        window.onload = function() {
+            const savedData = localStorage.getItem('horaireData');
+            if (savedData) {
+                loadData();
+            } else {
+                for (let i = 0; i < 3; i++) addRow();
+            }
+            loadTheme();
+            calculate();
+        };
+
+        function addRow() {
+            rowCount++;
+            const tbody = document.getElementById('tableBody');
+            const row = tbody.insertRow();
+            row.id = `row${rowCount}`;
+            const tabStart = currentTabIndex;
+            const tabEnd = currentTabIndex + 1;
+            currentTabIndex += 2;
+            row.innerHTML = `
+                <td><input type="time" id="debut${rowCount}" tabindex="${tabStart}" onchange="calculate()"></td>
+                <td><input type="time" id="fin${rowCount}" tabindex="${tabEnd}" onchange="calculate()"></td>
+                <td class="duration-cell" id="duree${rowCount}">0.00</td>
+                <td><button class="delete-btn" onclick="deleteRow(${rowCount})" tabindex="-1">×</button></td>
+            `;
+        }
+
+        function deleteRow(id) {
+            const row = document.getElementById(`row${id}`);
+            if (row) {
+                row.remove();
+                calculate();
+                saveData();
+            }
+        }
+
+        function timeToDecimal(timeStr) {
+            if (!timeStr) return 0;
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return hours + minutes / 60;
+        }
+
+        function decimalToTime(decimal) {
+            if (isNaN(decimal)) return '--:--';
+            while (decimal >= 24) decimal -= 24;
+            while (decimal < 0) decimal += 24;
+            const hours = Math.floor(decimal);
+            const minutes = Math.round((decimal - hours) * 60);
+            if (minutes === 60) {
+                return `${String((hours + 1) % 24).padStart(2, '0')}:00`;
+            }
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        }
+
+        function getActiveRow() {
+            const tbody = document.getElementById('tableBody');
+            const rows = tbody.getElementsByTagName('tr');
+            for (let i = rows.length - 1; i >= 0; i--) {
+                const inputs = rows[i].getElementsByTagName('input');
+                if (inputs.length >= 2) {
+                    const debutValue = inputs[0].value;
+                    const finValue = inputs[1].value;
+                    if (debutValue && !finValue) {
+                        return { hasActive: true, time: debutValue, decimal: timeToDecimal(debutValue) };
+                    }
+                }
+            }
+            return { hasActive: false };
+        }
+
+        function calculate() {
+            let totalDuration = 0;
+            const tbody = document.getElementById('tableBody');
+            const rows = tbody.getElementsByTagName('tr');
+            
+            for (let i = 0; i < rows.length; i++) {
+                const inputs = rows[i].getElementsByTagName('input');
+                const dureeCell = rows[i].getElementsByClassName('duration-cell')[0];
+                if (inputs.length >= 2 && dureeCell) {
+                    const debut = inputs[0].value;
+                    const fin = inputs[1].value;
+                    if (debut && fin) {
+                        const debutDecimal = timeToDecimal(debut);
+                        const finDecimal = timeToDecimal(fin);
+                        let duration = finDecimal - debutDecimal;
+                        if (duration < 0) duration += 24;
+                        dureeCell.textContent = duration.toFixed(2);
+                        totalDuration += duration;
+                    } else {
+                        dureeCell.textContent = '0.00';
+                    }
+                }
+            }
+
+            document.getElementById('dureeTravail').textContent = totalDuration.toFixed(2) + ' h';
+            const tempsDu = parseFloat(document.getElementById('tempsDu').value) || 0;
+            const pause = parseFloat(document.getElementById('pause').value) || 0;
+            const difference = totalDuration + pause - tempsDu;
+            const diffElem = document.getElementById('difference');
+            diffElem.textContent = difference.toFixed(2) + ' h';
+            diffElem.className = 'result-value ' + (difference >= 0 ? 'positive' : 'negative');
+
+            const activeRow = getActiveRow();
+            const departureCard1 = document.getElementById('departureCard1');
+            const departureCard2 = document.getElementById('departureCard2');
+            
+            if (activeRow.hasActive) {
+                departureCard1.style.opacity = '1';
+                departureCard2.style.opacity = '1';
+                const tempsRestantPourHeures = tempsDu - totalDuration - pause;
+                const partirHeuresDecimal = activeRow.decimal + tempsRestantPourHeures;
+                document.getElementById('partirHeures').textContent = decimalToTime(partirHeuresDecimal);
+                const tempsRestant9h = 9 - totalDuration - pause;
+                const partir9hDecimal = activeRow.decimal + tempsRestant9h;
+                document.getElementById('partir9h').textContent = decimalToTime(partir9hDecimal);
+            } else {
+                document.getElementById('partirHeures').textContent = '--:--';
+                document.getElementById('partir9h').textContent = '--:--';
+                departureCard1.style.opacity = '0.4';
+                departureCard2.style.opacity = '0.4';
+            }
+            saveData();
+        }
+
+        function clearAll() {
+            if (confirm('⚠️ Voulez-vous vraiment tout effacer ?')) {
+                document.getElementById('tableBody').innerHTML = '';
+                rowCount = 0;
+                currentTabIndex = 1;
+                for (let i = 0; i < 3; i++) addRow();
+                calculate();
+                localStorage.removeItem('horaireData');
+            }
+        }
+
+        function saveData() {
+            const data = { tempsDu: document.getElementById('tempsDu').value, pause: document.getElementById('pause').value, rows: [] };
+            const tbody = document.getElementById('tableBody');
+            const rows = tbody.getElementsByTagName('tr');
+            for (let i = 0; i < rows.length; i++) {
+                const inputs = rows[i].getElementsByTagName('input');
+                if (inputs.length >= 2) {
+                    data.rows.push({ debut: inputs[0].value, fin: inputs[1].value });
+                }
+            }
+            localStorage.setItem('horaireData', JSON.stringify(data));
+        }
+
+        function loadData() {
+            const savedData = localStorage.getItem('horaireData');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                document.getElementById('tempsDu').value = data.tempsDu || 8.26;
+                document.getElementById('pause').value = data.pause || 0.34;
+                data.rows.forEach(rowData => {
+                    addRow();
+                    const tbody = document.getElementById('tableBody');
+                    const lastRow = tbody.rows[tbody.rows.length - 1];
+                    const inputs = lastRow.getElementsByTagName('input');
+                    if (inputs.length >= 2) {
+                        inputs[0].value = rowData.debut;
+                        inputs[1].value = rowData.fin;
+                    }
+                });
+            }
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? '' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || '';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        }
+    </script>
+</body>
+</html>
