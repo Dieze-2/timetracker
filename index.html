@@ -211,7 +211,6 @@
             color: var(--text-primary);
             transition: all 0.3s ease;
             font-family: -apple-system, BlinkMacSystemFont, 'SF Mono', 'Courier New', monospace;
-            /* Fix pour iPhone */
             -webkit-appearance: none;
             appearance: none;
         }
@@ -222,9 +221,14 @@
             box-shadow: 0 0 0 3px var(--glow);
         }
 
-        /* Style spécifique pour input time sur iOS */
+        /* Centrage du texte dans les inputs time */
         input[type="time"]::-webkit-datetime-edit {
             padding: 0;
+            text-align: center;
+        }
+
+        input[type="time"]::-webkit-datetime-edit-fields-wrapper {
+            text-align: center;
         }
 
         .table-container {
@@ -252,7 +256,6 @@
             letter-spacing: 1px;
         }
 
-        /* CARTES HORAIRES - AFFICHAGE LIGNE */
         .time-rows {
             display: flex;
             flex-direction: column;
@@ -271,7 +274,6 @@
             border-color: var(--border-hover);
         }
 
-        /* LABELS AU-DESSUS, INPUTS SUR UNE LIGNE */
         .time-labels-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -286,6 +288,7 @@
             text-transform: uppercase;
             letter-spacing: 0.8px;
             padding-left: 2px;
+            text-align: center;
         }
 
         .time-inputs-row {
@@ -297,7 +300,7 @@
 
         .time-card input[type="time"] {
             width: 100%;
-            min-width: 0; /* Important pour éviter le débordement */
+            min-width: 0;
             padding: 11px 8px;
             font-size: 15px;
             background: var(--bg-secondary);
@@ -307,15 +310,27 @@
             font-weight: 600;
             transition: all 0.2s ease;
             font-family: -apple-system, BlinkMacSystemFont, 'SF Mono', 'Courier New', monospace;
-            /* Fix iOS */
             -webkit-appearance: none;
             appearance: none;
+            text-align: center;
         }
 
         .time-card input[type="time"]:focus {
             outline: none;
             border-color: var(--accent-primary);
             box-shadow: 0 0 0 3px var(--glow);
+        }
+
+        /* Force le centrage sur Android/Chrome */
+        .time-card input[type="time"]::-webkit-datetime-edit {
+            text-align: center;
+            width: 100%;
+            display: block;
+        }
+
+        .time-card input[type="time"]::-webkit-datetime-edit-fields-wrapper {
+            justify-content: center;
+            display: flex;
         }
 
         .time-info {
