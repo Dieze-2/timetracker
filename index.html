@@ -244,7 +244,7 @@
             letter-spacing: 1px;
         }
 
-        /* NOUVELLE STRUCTURE RESPONSIVE CARTES */
+        /* CARTES RESPONSIVE SANS CHEVAUCHEMENT */
         .time-rows {
             display: flex;
             flex-direction: column;
@@ -255,11 +255,7 @@
             background: var(--bg-input);
             border: 1.5px solid var(--border-color);
             border-radius: 12px;
-            padding: 12px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: auto auto;
-            gap: 10px;
+            padding: 14px;
             transition: all 0.2s ease;
         }
 
@@ -267,7 +263,14 @@
             border-color: var(--border-hover);
         }
 
+        .time-inputs-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
         .time-input-group {
+            flex: 1;
             display: flex;
             flex-direction: column;
             gap: 6px;
@@ -279,27 +282,39 @@
             color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            padding-left: 2px;
         }
 
         .time-card input[type="time"] {
-            padding: 10px;
+            width: 100%;
+            padding: 10px 8px;
             font-size: 15px;
             background: var(--bg-secondary);
+            border: 1.5px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .time-card input[type="time"]:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px var(--glow);
         }
 
         .time-info {
-            grid-column: 1 / -1;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-top: 8px;
+            padding-top: 12px;
             border-top: 1px solid var(--border-color);
         }
 
         .duration-display {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             font-size: 13px;
             font-weight: 700;
             color: var(--accent-primary);
@@ -322,6 +337,7 @@
             font-size: 11px;
             touch-action: manipulation;
             transition: all 0.2s ease;
+            white-space: nowrap;
         }
 
         .delete-btn:active {
@@ -526,6 +542,15 @@
             .table-container {
                 padding: 12px;
             }
+
+            .time-card {
+                padding: 12px;
+            }
+
+            .time-card input[type="time"] {
+                font-size: 14px;
+                padding: 9px 6px;
+            }
         }
     </style>
 </head>
@@ -669,13 +694,15 @@
             card.className = 'time-card';
             card.id = `row${rowCount}`;
             card.innerHTML = `
-                <div class="time-input-group">
-                    <label class="time-input-label">Début</label>
-                    <input type="time" id="debut${rowCount}" tabindex="${tabStart}" onchange="calculate()">
-                </div>
-                <div class="time-input-group">
-                    <label class="time-input-label">Fin</label>
-                    <input type="time" id="fin${rowCount}" tabindex="${tabEnd}" onchange="calculate()">
+                <div class="time-inputs-row">
+                    <div class="time-input-group">
+                        <label class="time-input-label">Début</label>
+                        <input type="time" id="debut${rowCount}" tabindex="${tabStart}" onchange="calculate()">
+                    </div>
+                    <div class="time-input-group">
+                        <label class="time-input-label">Fin</label>
+                        <input type="time" id="fin${rowCount}" tabindex="${tabEnd}" onchange="calculate()">
+                    </div>
                 </div>
                 <div class="time-info">
                     <div class="duration-display" id="duree${rowCount}">0.00 h</div>
