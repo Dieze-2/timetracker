@@ -185,53 +185,6 @@
             transform: scale(0.95);
         }
 
-        /* BADGE DE NOTIFICATION FLOTTANT */
-        .notif-badge {
-            position: fixed;
-            bottom: calc(80px + env(safe-area-inset-bottom, 0));
-            right: 20px;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            color: white;
-            padding: 16px 20px;
-            border-radius: 16px;
-            box-shadow: 0 8px 24px rgba(38, 166, 154, 0.4);
-            font-size: 13px;
-            font-weight: 600;
-            z-index: 999;
-            max-width: 280px;
-            animation: slideInRight 0.4s ease;
-            display: none;
-        }
-
-        .notif-badge.visible {
-            display: block;
-        }
-
-        .notif-badge-title {
-            font-size: 11px;
-            opacity: 0.9;
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .notif-badge-time {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 4px;
-            font-family: 'SF Mono', monospace;
-        }
-
-        .notif-badge-info {
-            font-size: 12px;
-            opacity: 0.85;
-        }
-
-        @keyframes slideInRight {
-            from { transform: translateX(320px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
         .params-section {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -560,10 +513,38 @@
             color: var(--text-secondary);
             font-size: 12px;
             line-height: 1.6;
+            margin-bottom: 20px;
         }
 
         .info-message strong {
             color: var(--accent-primary);
+        }
+
+        .notif-info {
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            border: 1.5px solid var(--border-color);
+            padding: 15px;
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-size: 11px;
+            line-height: 1.6;
+        }
+
+        .notif-info strong {
+            color: var(--accent-primary);
+            display: block;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .notif-info ul {
+            margin-left: 20px;
+            margin-top: 8px;
+        }
+
+        .notif-info li {
+            margin-bottom: 4px;
         }
 
         .btn-add-mini {
@@ -648,29 +629,16 @@
                 padding: 10px 6px;
                 font-size: 14px;
             }
-
-            .notif-badge {
-                right: 10px;
-                bottom: calc(70px + env(safe-area-inset-bottom, 0));
-                max-width: calc(100% - 20px);
-            }
         }
     </style>
 </head>
 <body>
-    <!-- BADGE DE NOTIFICATION -->
-    <div class="notif-badge" id="notifBadge">
-        <div class="notif-badge-title">🚪 Partir à</div>
-        <div class="notif-badge-time" id="badgeTime">--:--</div>
-        <div class="notif-badge-info" id="badgeInfo">Activez une heure</div>
-    </div>
-
     <div class="container">
         <header>
             <h1>Time Tracker</h1>
             <div class="header-actions">
                 <button class="theme-toggle" onclick="toggleTheme()">🌓 Thème</button>
-                <button class="notif-toggle" id="notifToggle" onclick="toggleNotifications()">🔔 Badge</button>
+                <button class="notif-toggle" id="notifToggle" onclick="toggleNotifications()">🔔 Notifs</button>
             </div>
         </header>
 
@@ -725,16 +693,59 @@
         <div class="info-message">
             💡 <strong>Info :</strong> Les horaires de départ s'affichent uniquement quand vous avez une ligne avec une heure de début sans heure de fin.
         </div>
+
+        <div class="notif-info">
+            <strong>📱 À propos des notifications :</strong>
+            <ul>
+                <li><strong>Android :</strong> Notifications système fonctionnelles dans le volet</li>
+                <li><strong>iPhone :</strong> Les PWA ne supportent PAS les notifications</li>
+            </ul>
+            <p style="margin-top: 10px; font-style: italic;">
+                Pour iPhone : Utilisez l'app en mode plein écran ou attendez iOS 18+ (support prévu).
+            </p>
+        </div>
     </div>
 
     <script>
-        // SERVICE WORKER
+        // SERVICE WORKER avec support notifications
         if ('serviceWorker' in navigator) {
             const swCode = `
-                const CACHE='tt-v1';
-                self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['/'])));self.skipWaiting()});
-                self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.map(key=>key!==CACHE&&caches.delete(key)))));self.clients.claim()});
-                self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(f=>caches.open(CACHE).then(c=>{c.put(e.request,f.clone());return f})).catch(()=>caches.match('/'))))});
+                const CACHE='tt-v2';
+                
+                self.addEventListener('install', e => {
+                    e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/'])));
+                    self.skipWaiting();
+                });
+                
+                self.addEventListener('activate', e => {
+                    e.waitUntil(
+                        caches.keys().then(keys => 
+                            Promise.all(keys.map(key => key !== CACHE && caches.delete(key)))
+                        )
+                    );
+                    self.clients.claim();
+                });
+                
+                self.addEventListener('fetch', e => {
+                    e.respondWith(
+                        caches.match(e.request).then(r => 
+                            r || fetch(e.request).then(f => 
+                                caches.open(CACHE).then(c => {
+                                    c.put(e.request, f.clone());
+                                    return f;
+                                })
+                            ).catch(() => caches.match('/'))
+                        )
+                    );
+                });
+
+                // Gestion des notifications
+                self.addEventListener('notificationclick', event => {
+                    event.notification.close();
+                    event.waitUntil(
+                        clients.openWindow('/')
+                    );
+                });
             `;
             const blob = new Blob([swCode], { type: 'application/javascript' });
             navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(e=>console.log('SW error:',e));
@@ -781,41 +792,75 @@
             setTimeout(() => btn.remove(), 15000);
         });
 
-        // GESTION BADGE FLOTTANT
-        let badgeEnabled = localStorage.getItem('badgeEnabled') === 'true';
+        // GESTION NOTIFICATIONS SYSTÈME
+        let notificationsEnabled = localStorage.getItem('notificationsEnabled') === 'true';
 
-        function toggleNotifications() {
+        async function toggleNotifications() {
             const btn = document.getElementById('notifToggle');
-            badgeEnabled = !badgeEnabled;
-            localStorage.setItem('badgeEnabled', badgeEnabled);
             
-            if (badgeEnabled) {
-                btn.classList.add('active');
-                btn.textContent = '🔔 Badge ON';
-                updateBadge();
+            if (!notificationsEnabled) {
+                // Vérifier le support
+                if (!('Notification' in window)) {
+                    alert('❌ Votre navigateur ne supporte pas les notifications.');
+                    return;
+                }
+
+                // Vérifier iOS
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                if (isIOS) {
+                    alert('❌ iPhone/iPad : Les notifications PWA ne sont pas supportées par Apple.\n\n✅ Alternative : Gardez l\'app ouverte pour voir les horaires en temps réel.');
+                    return;
+                }
+
+                // Demander la permission
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    notificationsEnabled = true;
+                    localStorage.setItem('notificationsEnabled', 'true');
+                    btn.classList.add('active');
+                    btn.textContent = '🔔 Notifs ON';
+                    updateNotification();
+                } else {
+                    alert('❌ Notifications refusées.\n\nActivez-les dans les paramètres du navigateur puis réessayez.');
+                }
             } else {
+                // Désactiver
+                notificationsEnabled = false;
+                localStorage.setItem('notificationsEnabled', 'false');
                 btn.classList.remove('active');
-                btn.textContent = '🔔 Badge OFF';
-                document.getElementById('notifBadge').classList.remove('visible');
+                btn.textContent = '🔔 Notifs OFF';
+                
+                // Fermer les notifications existantes
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.ready.then(registration => {
+                        registration.getNotifications({ tag: 'timetracker' }).then(notifications => {
+                            notifications.forEach(n => n.close());
+                        });
+                    });
+                }
             }
         }
 
-        function updateBadge() {
-            const badge = document.getElementById('notifBadge');
-            const timeEl = document.getElementById('badgeTime');
-            const infoEl = document.getElementById('badgeInfo');
-            
-            if (!badgeEnabled) {
-                badge.classList.remove('visible');
+        async function updateNotification() {
+            if (!notificationsEnabled || !('Notification' in window) || Notification.permission !== 'granted') {
                 return;
             }
 
             const active = getActiveRow();
+            
+            // Fermer les notifications si pas d'heure active
             if (!active.hasActive) {
-                badge.classList.remove('visible');
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.ready.then(registration => {
+                        registration.getNotifications({ tag: 'timetracker' }).then(notifications => {
+                            notifications.forEach(n => n.close());
+                        });
+                    });
+                }
                 return;
             }
 
+            // Calculer les infos
             const du = parseFloat(document.getElementById('tempsDu').value) || 0;
             const pause = parseFloat(document.getElementById('pause').value) || 0;
             
@@ -832,19 +877,30 @@
             const partirA = decimalToTime(active.decimal + (du - total - pause));
             const restant = (du - total - pause).toFixed(2);
 
-            timeEl.textContent = partirA;
-            infoEl.textContent = `⏱️ Encore ${restant}h à faire`;
-            badge.classList.add('visible');
+            // Créer/Mettre à jour la notification
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.showNotification('⚡ Time Tracker', {
+                        body: `🚪 Partir à ${partirA}\n⏱️ Encore ${restant}h à faire`,
+                        icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Cdefs%3E%3ClinearGradient id="g"%3E%3Cstop offset="0%25" style="stop-color:%2326A69A"/%3E%3Cstop offset="100%25" style="stop-color:%2300796B"/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="100" height="100" fill="url(%23g)" rx="20"/%3E%3Ctext x="50" y="70" font-size="60" text-anchor="middle" fill="white"%3E⚡%3C/text%3E%3C/svg%3E',
+                        tag: 'timetracker',
+                        requireInteraction: true,
+                        renotify: true,
+                        vibrate: [200],
+                        data: { partirA, restant }
+                    });
+                });
+            }
         }
 
-        // Initialiser l'état du bouton au chargement
+        // Initialiser l'état du bouton
         window.addEventListener('load', () => {
             const btn = document.getElementById('notifToggle');
-            if (badgeEnabled) {
+            if (notificationsEnabled) {
                 btn.classList.add('active');
-                btn.textContent = '🔔 Badge ON';
+                btn.textContent = '🔔 Notifs ON';
             } else {
-                btn.textContent = '🔔 Badge OFF';
+                btn.textContent = '🔔 Notifs OFF';
             }
         });
 
@@ -967,8 +1023,8 @@
                 c2.style.opacity = '0.5';
             }
             
-            // Mettre à jour le badge
-            updateBadge();
+            // Mettre à jour la notification
+            updateNotification();
             
             saveData();
         }
