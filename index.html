@@ -185,6 +185,53 @@
             transform: scale(0.95);
         }
 
+        /* BADGE DE NOTIFICATION FLOTTANT */
+        .notif-badge {
+            position: fixed;
+            bottom: calc(80px + env(safe-area-inset-bottom, 0));
+            right: 20px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            padding: 16px 20px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(38, 166, 154, 0.4);
+            font-size: 13px;
+            font-weight: 600;
+            z-index: 999;
+            max-width: 280px;
+            animation: slideInRight 0.4s ease;
+            display: none;
+        }
+
+        .notif-badge.visible {
+            display: block;
+        }
+
+        .notif-badge-title {
+            font-size: 11px;
+            opacity: 0.9;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .notif-badge-time {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            font-family: 'SF Mono', monospace;
+        }
+
+        .notif-badge-info {
+            font-size: 12px;
+            opacity: 0.85;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(320px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
         .params-section {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -601,16 +648,29 @@
                 padding: 10px 6px;
                 font-size: 14px;
             }
+
+            .notif-badge {
+                right: 10px;
+                bottom: calc(70px + env(safe-area-inset-bottom, 0));
+                max-width: calc(100% - 20px);
+            }
         }
     </style>
 </head>
 <body>
+    <!-- BADGE DE NOTIFICATION -->
+    <div class="notif-badge" id="notifBadge">
+        <div class="notif-badge-title">🚪 Partir à</div>
+        <div class="notif-badge-time" id="badgeTime">--:--</div>
+        <div class="notif-badge-info" id="badgeInfo">Activez une heure</div>
+    </div>
+
     <div class="container">
         <header>
             <h1>Time Tracker</h1>
             <div class="header-actions">
                 <button class="theme-toggle" onclick="toggleTheme()">🌓 Thème</button>
-                <button class="notif-toggle" id="notifToggle" onclick="toggleNotifications()">🔔 Notifs</button>
+                <button class="notif-toggle" id="notifToggle" onclick="toggleNotifications()">🔔 Badge</button>
             </div>
         </header>
 
@@ -721,60 +781,38 @@
             setTimeout(() => btn.remove(), 15000);
         });
 
-        // GESTION NOTIFICATIONS
-        let notificationsEnabled = localStorage.getItem('notificationsEnabled') === 'true';
+        // GESTION BADGE FLOTTANT
+        let badgeEnabled = localStorage.getItem('badgeEnabled') === 'true';
 
-        async function toggleNotifications() {
+        function toggleNotifications() {
             const btn = document.getElementById('notifToggle');
+            badgeEnabled = !badgeEnabled;
+            localStorage.setItem('badgeEnabled', badgeEnabled);
             
-            if (!notificationsEnabled) {
-                // Activer les notifications
-                if (!('Notification' in window)) {
-                    alert('❌ Votre navigateur ne supporte pas les notifications');
-                    return;
-                }
-
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    notificationsEnabled = true;
-                    localStorage.setItem('notificationsEnabled', 'true');
-                    btn.classList.add('active');
-                    btn.textContent = '🔔 Notifs ON';
-                    updateNotification();
-                } else {
-                    alert('❌ Notifications refusées. Activez-les dans les paramètres du navigateur.');
-                }
+            if (badgeEnabled) {
+                btn.classList.add('active');
+                btn.textContent = '🔔 Badge ON';
+                updateBadge();
             } else {
-                // Désactiver les notifications
-                notificationsEnabled = false;
-                localStorage.setItem('notificationsEnabled', 'false');
                 btn.classList.remove('active');
-                btn.textContent = '🔔 Notifs OFF';
-                
-                // Fermer la notification existante
-                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-                    navigator.serviceWorker.ready.then(registration => {
-                        registration.getNotifications().then(notifications => {
-                            notifications.forEach(n => n.close());
-                        });
-                    });
-                }
+                btn.textContent = '🔔 Badge OFF';
+                document.getElementById('notifBadge').classList.remove('visible');
             }
         }
 
-        function updateNotification() {
-            if (!notificationsEnabled || Notification.permission !== 'granted') return;
+        function updateBadge() {
+            const badge = document.getElementById('notifBadge');
+            const timeEl = document.getElementById('badgeTime');
+            const infoEl = document.getElementById('badgeInfo');
+            
+            if (!badgeEnabled) {
+                badge.classList.remove('visible');
+                return;
+            }
 
             const active = getActiveRow();
             if (!active.hasActive) {
-                // Pas d'heure active, fermer les notifications
-                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-                    navigator.serviceWorker.ready.then(registration => {
-                        registration.getNotifications().then(notifications => {
-                            notifications.forEach(n => n.close());
-                        });
-                    });
-                }
+                badge.classList.remove('visible');
                 return;
             }
 
@@ -794,28 +832,19 @@
             const partirA = decimalToTime(active.decimal + (du - total - pause));
             const restant = (du - total - pause).toFixed(2);
 
-            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-                navigator.serviceWorker.ready.then(registration => {
-                    registration.showNotification('⚡ Time Tracker', {
-                        body: `🚪 Partir à ${partirA}\n⏱️ Encore ${restant}h à faire`,
-                        icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Cdefs%3E%3ClinearGradient id="grad"%3E%3Cstop offset="0%25" style="stop-color:%2326A69A"/%3E%3Cstop offset="100%25" style="stop-color:%2300796B"/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="100" height="100" fill="url(%23grad)" rx="20"/%3E%3Ctext x="50" y="70" font-size="60" text-anchor="middle" fill="white"%3E⚡%3C/text%3E%3C/svg%3E',
-                        tag: 'timetracker-status',
-                        requireInteraction: true,
-                        silent: true,
-                        data: { partirA, restant }
-                    });
-                });
-            }
+            timeEl.textContent = partirA;
+            infoEl.textContent = `⏱️ Encore ${restant}h à faire`;
+            badge.classList.add('visible');
         }
 
         // Initialiser l'état du bouton au chargement
         window.addEventListener('load', () => {
             const btn = document.getElementById('notifToggle');
-            if (notificationsEnabled) {
+            if (badgeEnabled) {
                 btn.classList.add('active');
-                btn.textContent = '🔔 Notifs ON';
+                btn.textContent = '🔔 Badge ON';
             } else {
-                btn.textContent = '🔔 Notifs OFF';
+                btn.textContent = '🔔 Badge OFF';
             }
         });
 
@@ -938,8 +967,8 @@
                 c2.style.opacity = '0.5';
             }
             
-            // Mettre à jour la notification
-            updateNotification();
+            // Mettre à jour le badge
+            updateBadge();
             
             saveData();
         }
