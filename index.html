@@ -202,7 +202,7 @@
 
         input[type="time"], input[type="number"] {
             width: 100%;
-            padding: 12px;
+            padding: 12px 10px;
             border: 1.5px solid var(--border-color);
             border-radius: 10px;
             font-size: 16px;
@@ -211,12 +211,20 @@
             color: var(--text-primary);
             transition: all 0.3s ease;
             font-family: -apple-system, BlinkMacSystemFont, 'SF Mono', 'Courier New', monospace;
+            /* Fix pour iPhone */
+            -webkit-appearance: none;
+            appearance: none;
         }
 
         input[type="time"]:focus, input[type="number"]:focus {
             outline: none;
             border-color: var(--accent-primary);
             box-shadow: 0 0 0 3px var(--glow);
+        }
+
+        /* Style spécifique pour input time sur iOS */
+        input[type="time"]::-webkit-datetime-edit {
+            padding: 0;
         }
 
         .table-container {
@@ -244,18 +252,18 @@
             letter-spacing: 1px;
         }
 
-        /* CARTES EN COLONNE VERTICALE (pas de chevauchement) */
+        /* CARTES HORAIRES - AFFICHAGE LIGNE */
         .time-rows {
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 12px;
         }
 
         .time-card {
             background: var(--bg-input);
             border: 1.5px solid var(--border-color);
             border-radius: 12px;
-            padding: 16px;
+            padding: 14px;
             transition: all 0.2s ease;
         }
 
@@ -263,40 +271,45 @@
             border-color: var(--border-hover);
         }
 
-        /* INPUTS EMPILÉS VERTICALEMENT */
-        .time-inputs-column {
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-            margin-bottom: 14px;
-        }
-
-        .time-input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 7px;
+        /* LABELS AU-DESSUS, INPUTS SUR UNE LIGNE */
+        .time-labels-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 6px;
         }
 
         .time-input-label {
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 700;
             color: var(--text-secondary);
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.8px;
             padding-left: 2px;
+        }
+
+        .time-inputs-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
         }
 
         .time-card input[type="time"] {
             width: 100%;
-            padding: 14px 12px;
-            font-size: 16px;
+            min-width: 0; /* Important pour éviter le débordement */
+            padding: 11px 8px;
+            font-size: 15px;
             background: var(--bg-secondary);
             border: 1.5px solid var(--border-color);
-            border-radius: 10px;
+            border-radius: 9px;
             color: var(--text-primary);
             font-weight: 600;
             transition: all 0.2s ease;
             font-family: -apple-system, BlinkMacSystemFont, 'SF Mono', 'Courier New', monospace;
+            /* Fix iOS */
+            -webkit-appearance: none;
+            appearance: none;
         }
 
         .time-card input[type="time"]:focus {
@@ -309,15 +322,15 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-top: 14px;
+            padding-top: 12px;
             border-top: 1px solid var(--border-color);
         }
 
         .duration-display {
             display: flex;
             align-items: center;
-            gap: 7px;
-            font-size: 14px;
+            gap: 6px;
+            font-size: 13px;
             font-weight: 700;
             color: var(--accent-primary);
             font-family: 'SF Mono', 'Courier New', monospace;
@@ -325,18 +338,18 @@
 
         .duration-display::before {
             content: '⏱️';
-            font-size: 16px;
+            font-size: 15px;
         }
 
         .delete-btn {
             background: transparent;
             border: 1.5px solid var(--error);
-            padding: 8px 16px;
+            padding: 7px 14px;
             border-radius: 8px;
             color: var(--error);
             font-weight: 600;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 11px;
             touch-action: manipulation;
             transition: all 0.2s ease;
             white-space: nowrap;
@@ -546,7 +559,12 @@
             }
 
             .time-card {
-                padding: 14px;
+                padding: 12px;
+            }
+
+            .time-card input[type="time"] {
+                padding: 10px 6px;
+                font-size: 14px;
             }
         }
     </style>
@@ -691,15 +709,13 @@
             card.className = 'time-card';
             card.id = `row${rowCount}`;
             card.innerHTML = `
-                <div class="time-inputs-column">
-                    <div class="time-input-group">
-                        <label class="time-input-label">Début</label>
-                        <input type="time" id="debut${rowCount}" tabindex="${tabStart}" onchange="calculate()">
-                    </div>
-                    <div class="time-input-group">
-                        <label class="time-input-label">Fin</label>
-                        <input type="time" id="fin${rowCount}" tabindex="${tabEnd}" onchange="calculate()">
-                    </div>
+                <div class="time-labels-row">
+                    <label class="time-input-label">Début</label>
+                    <label class="time-input-label">Fin</label>
+                </div>
+                <div class="time-inputs-row">
+                    <input type="time" id="debut${rowCount}" tabindex="${tabStart}" onchange="calculate()">
+                    <input type="time" id="fin${rowCount}" tabindex="${tabEnd}" onchange="calculate()">
                 </div>
                 <div class="time-info">
                     <div class="duration-display" id="duree${rowCount}">0.00 h</div>
