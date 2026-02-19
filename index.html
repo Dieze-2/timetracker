@@ -66,7 +66,7 @@
         [data-theme="light"] {
             /* Thème clair */
             --bg-primary: #F1F8F7;
-            --bg-secondary: #FFFFFF;
+            --bg-secondary: #E8F5F3;
             --bg-card: rgba(38, 166, 154, 0.06);
             --bg-input: rgba(38, 166, 154, 0.08);
             
@@ -375,14 +375,7 @@
             }
         }
 
-        .header-actions {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .theme-toggle, .notif-toggle {
+        .theme-toggle {
             background: var(--bg-card);
             backdrop-filter: blur(40px) saturate(180%);
             -webkit-backdrop-filter: blur(40px) saturate(180%);
@@ -401,13 +394,7 @@
             white-space: nowrap;
         }
 
-        .notif-toggle.active {
-            background: var(--accent-primary);
-            color: white;
-            border-color: var(--accent-primary);
-        }
-
-        .theme-toggle:hover, .notif-toggle:hover {
+        .theme-toggle:hover {
             transform: translateY(-2px);
             border-color: var(--border-hover);
             box-shadow: 
@@ -415,7 +402,7 @@
                 inset 0 1px 0 rgba(255, 255, 255, 0.2);
         }
 
-        .theme-toggle:active, .notif-toggle:active {
+        .theme-toggle:active {
             transform: scale(0.95);
         }
 
@@ -799,8 +786,8 @@
             50% { opacity: 0.85; transform: scale(0.98); }
         }
 
-        /* Messages d'information */
-        .info-message, .notif-info {
+        /* Message d'information */
+        .info-message {
             background: var(--bg-input);
             backdrop-filter: blur(20px);
             border-left: 3px solid var(--accent-primary);
@@ -810,24 +797,10 @@
             font-size: 13px;
             line-height: 1.6;
             box-shadow: -3px 0 0 var(--glow);
-            margin-bottom: 20px;
         }
 
-        .info-message strong, .notif-info strong {
+        .info-message strong {
             color: var(--accent-primary);
-        }
-
-        .notif-info {
-            border-left-color: var(--teal-400);
-        }
-
-        .notif-info ul {
-            margin-left: 20px;
-            margin-top: 8px;
-        }
-
-        .notif-info li {
-            margin-bottom: 4px;
         }
 
         /* Animation du bouton + */
@@ -903,15 +876,6 @@
                 font-size: 22px;
             }
 
-            .header-actions {
-                width: 100%;
-            }
-
-            .theme-toggle, .notif-toggle {
-                flex: 1;
-                min-width: 100px;
-            }
-
             .result-grid {
                 grid-template-columns: 1fr;
             }
@@ -982,10 +946,7 @@
     <div class="container">
         <header>
             <h1>Time Tracker</h1>
-            <div class="header-actions">
-                <button class="theme-toggle" onclick="toggleTheme()">🌓 Thème</button>
-                <button class="notif-toggle" id="notifToggle" onclick="toggleNotifications()">🔔 Notifs</button>
-            </div>
+            <button class="theme-toggle" onclick="toggleTheme()">🌓 Thème</button>
         </header>
 
         <div class="params-section">
@@ -1039,25 +1000,16 @@
         <div class="info-message">
             💡 <strong>Info :</strong> Les horaires de départ s'affichent uniquement quand vous avez une ligne avec une heure de début sans heure de fin.
         </div>
-
-        <div class="notif-info">
-            <strong>📱 Notifications :</strong>
-            <ul>
-                <li><strong>Android :</strong> Fonctionnelles dans le volet</li>
-                <li><strong>iPhone :</strong> Non supportées (limitation iOS)</li>
-            </ul>
-        </div>
     </div>
 
     <script>
         // SERVICE WORKER
         if ('serviceWorker' in navigator) {
             const swCode = `
-                const CACHE='tt-v3';
+                const CACHE='tt-v4';
                 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['/'])));self.skipWaiting()});
                 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.map(key=>key!==CACHE&&caches.delete(key)))));self.clients.claim()});
                 self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(f=>caches.open(CACHE).then(c=>{c.put(e.request,f.clone());return f})).catch(()=>caches.match('/'))))});
-                self.addEventListener('notificationclick',e=>{e.notification.close();e.waitUntil(clients.openWindow('/'))});
             `;
             const blob = new Blob([swCode], { type: 'application/javascript' });
             navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(e=>console.log('SW:',e));
@@ -1102,97 +1054,6 @@
             };
             document.body.appendChild(btn);
             setTimeout(() => btn.remove(), 15000);
-        });
-
-        // NOTIFICATIONS
-        let notificationsEnabled = localStorage.getItem('notificationsEnabled') === 'true';
-
-        async function toggleNotifications() {
-            const btn = document.getElementById('notifToggle');
-            
-            if (!notificationsEnabled) {
-                if (!('Notification' in window)) {
-                    alert('❌ Notifications non supportées');
-                    return;
-                }
-
-                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-                if (isIOS) {
-                    alert('❌ iOS ne supporte pas les notifications PWA');
-                    return;
-                }
-
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    notificationsEnabled = true;
-                    localStorage.setItem('notificationsEnabled', 'true');
-                    btn.classList.add('active');
-                    btn.textContent = '🔔 Notifs ON';
-                    updateNotification();
-                }
-            } else {
-                notificationsEnabled = false;
-                localStorage.setItem('notificationsEnabled', 'false');
-                btn.classList.remove('active');
-                btn.textContent = '🔔 Notifs OFF';
-                
-                if (navigator.serviceWorker.controller) {
-                    navigator.serviceWorker.ready.then(reg => {
-                        reg.getNotifications({tag:'tt'}).then(n=>n.forEach(x=>x.close()));
-                    });
-                }
-            }
-        }
-
-        async function updateNotification() {
-            if (!notificationsEnabled || Notification.permission !== 'granted') return;
-
-            const active = getActiveRow();
-            if (!active.hasActive) {
-                if (navigator.serviceWorker.controller) {
-                    navigator.serviceWorker.ready.then(reg => {
-                        reg.getNotifications({tag:'tt'}).then(n=>n.forEach(x=>x.close()));
-                    });
-                }
-                return;
-            }
-
-            const du = parseFloat(document.getElementById('tempsDu').value) || 0;
-            const pause = parseFloat(document.getElementById('pause').value) || 0;
-            
-            let total = 0;
-            document.querySelectorAll('.time-card').forEach(card => {
-                const inputs = card.querySelectorAll('input[type="time"]');
-                if (inputs.length >= 2 && inputs[0].value && inputs[1].value) {
-                    let dur = timeToDecimal(inputs[1].value) - timeToDecimal(inputs[0].value);
-                    if (dur < 0) dur += 24;
-                    total += dur;
-                }
-            });
-
-            const partirA = decimalToTime(active.decimal + (du - total - pause));
-            const restant = (du - total - pause).toFixed(2);
-
-            if (navigator.serviceWorker.controller) {
-                navigator.serviceWorker.ready.then(reg => {
-                    reg.showNotification('⚡ Time Tracker', {
-                        body: `🚪 Partir à ${partirA}\n⏱️ ${restant}h restantes`,
-                        icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Cdefs%3E%3ClinearGradient id="g"%3E%3Cstop offset="0%25" style="stop-color:%2326A69A"/%3E%3Cstop offset="100%25" style="stop-color:%2300796B"/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="100" height="100" fill="url(%23g)" rx="20"/%3E%3Ctext x="50" y="70" font-size="60" text-anchor="middle" fill="white"%3E⚡%3C/text%3E%3C/svg%3E',
-                        tag: 'tt',
-                        requireInteraction: true,
-                        renotify: true,
-                        vibrate: [200]
-                    });
-                });
-            }
-        }
-
-        window.addEventListener('load', () => {
-            const btn = document.getElementById('notifToggle');
-            if (notificationsEnabled) {
-                btn.classList.add('active');
-                btn.textContent = '🔔 Notifs ON';
-            }
         });
 
         // APP LOGIC
@@ -1314,7 +1175,6 @@
                 c2.style.opacity = '0.4';
             }
             
-            updateNotification();
             saveData();
         }
 
