@@ -1003,17 +1003,14 @@
     </div>
 
     <script>
-        // SERVICE WORKER
+                // SERVICE WORKER
         if ('serviceWorker' in navigator) {
-            const swCode = `
-                const CACHE='tt-v4';
-                self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['/'])));self.skipWaiting()});
-                self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.map(key=>key!==CACHE&&caches.delete(key)))));self.clients.claim()});
-                self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(f=>caches.open(CACHE).then(c=>{c.put(e.request,f.clone());return f})).catch(()=>caches.match('/'))))});
-            `;
-            const blob = new Blob([swCode], { type: 'application/javascript' });
-            navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(e=>console.log('SW:',e));
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .catch(e => console.log('SW:', e));
+            });
         }
+
 
         // MANIFEST
         const manifest = {
