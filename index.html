@@ -444,7 +444,7 @@
             letter-spacing: 1.3px;
         }
 
-        /* === CORRECTIF : règles séparées pour time et number === */
+        input[type="time"],
         input[type="number"] {
             width: 100%;
             padding: 13px 16px;
@@ -460,22 +460,6 @@
             -webkit-appearance: none;
             appearance: none;
             text-align: center;
-        }
-
-        input[type="time"] {
-            width: 100%;
-            padding: 13px 16px;
-            border: 1.5px solid var(--border-color);
-            border-radius: 12px;
-            font-size: 15px;
-            font-weight: 600;
-            background: var(--bg-input);
-            color: var(--text-primary);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
-            backdrop-filter: blur(20px);
-            text-align: center;
-            /* Pas de appearance: none ici : conserve la saisie clavier sur desktop */
         }
 
         input[type="time"]:focus,
@@ -496,13 +480,6 @@
             text-align: center;
             justify-content: center;
             display: flex;
-        }
-
-        /* Masque l'icône horloge native sans casser la saisie clavier (Chromium) */
-        input[type="time"]::-webkit-calendar-picker-indicator {
-            opacity: 0.6;
-            cursor: pointer;
-            filter: invert(0.5) sepia(1) saturate(3) hue-rotate(130deg);
         }
 
         /* Tableau moderne */
