@@ -1,7 +1,9 @@
-const CACHE_NAME = 'time-tracker-v1';
+const CACHE_NAME = 'time-tracker-v2';
 const APP_SHELL = [
   './',
-  './index.html'
+  './index.html',
+  './fonts/bricolage-grotesque-latin.woff2',
+  './fonts/instrument-sans-latin.woff2'
 ];
 
 // Installation : pré-cache de la page principale
