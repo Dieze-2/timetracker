@@ -15,7 +15,8 @@
 
     <!-- Favicon inline (SVG) : éclair dessiné, plus d'emoji -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%234DB6AC'/%3E%3Cstop offset='1' stop-color='%2300796B'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='22' fill='url(%23g)'/%3E%3Cpath d='M55 12 22 56h24l-4 32 34-46H52z' fill='white'/%3E%3C/svg%3E">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%234DB6AC'/%3E%3Cstop offset='1' stop-color='%2300796B'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='22' fill='url(%23g)'/%3E%3Cpath d='M55 12 22 56h24l-4 32 34-46H52z' fill='white'/%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+    <link rel="manifest" href="./manifest.json">
 
     <!-- Polices hébergées dans le dépôt (OFL 1.1, voir fonts/) : disponibles hors ligne via le service worker -->
     <link rel="preload" href="./fonts/bricolage-grotesque-latin.woff2" as="font" type="font/woff2" crossorigin>
@@ -693,16 +694,40 @@
             transition: transform .35s var(--ease), opacity .2s, visibility .35s;
         }
         .toast.on { transform: translate(-50%, 0); opacity: 1; visibility: visible; }
-        .toast { padding: 4px 4px 4px 18px; max-width: calc(100% - 32px); }
+        .toast {
+            padding: 6px 6px 6px 16px;
+            width: max-content;
+            max-width: calc(100% - 32px);
+            border-radius: 20px;
+            gap: 10px;
+        }
+        .toast #toastTxt { flex: 1 1 auto; min-width: 0; line-height: 1.3; }
+        .toast-actions { display: flex; gap: 4px; flex: none; }
         .toast button {
             min-height: 44px;
-            padding: 0 16px;
+            padding: 0 14px;
+            white-space: nowrap;
             border: 0;
             border-radius: 999px;
             background: var(--accent);
             color: var(--accent-ink);
             font-weight: 600;
         }
+
+        /* Journée précédente, en lecture seule */
+        .prev-list { display: grid; gap: 6px; }
+        .prev-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            font-variant-numeric: tabular-nums;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--line-soft);
+        }
+        .prev-row:last-child { border-bottom: 0; }
+        .prev-row b { font-family: var(--f-display); font-weight: 600; }
+        .prev-row span { color: var(--muted); }
+        .prev-sum { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
 
         .install-prompt {
             position: fixed;
@@ -847,6 +872,24 @@
                 </button>
             </section>
 
+            <section class="block rise" data-block="veille" style="--i:4" hidden>
+                <span class="why" hidden></span>
+                <div class="band" id="prevTitle">Hier</div>
+                <div class="card">
+                    <div class="prev-list" id="prevList"></div>
+                    <div class="prev-sum">
+                        <div>
+                            <div class="tile-label">Total travail</div>
+                            <div class="tile-val" id="prevTotal"></div>
+                        </div>
+                        <div>
+                            <div class="tile-label">Différence</div>
+                            <div class="tile-val" id="prevDiff"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <section class="block rise" data-block="params" style="--i:4">
                 <span class="why" hidden></span>
                 <div class="band">Paramètres</div>
@@ -873,8 +916,8 @@
     </div>
 
     <div class="toast" id="toast" role="status">
-        <span id="toastTxt">Créneaux effacés</span>
-        <button class="press" id="undoBtn" onclick="undoClear()">Annuler</button>
+        <span id="toastTxt"></span>
+        <div class="toast-actions" id="toastActions"></div>
     </div>
 
     <script>
@@ -885,27 +928,6 @@
                     .catch(e => console.log('SW:', e));
             });
         }
-
-        // MANIFEST
-        const manifest = {
-            name: "Time Tracker Pro",
-            short_name: "TimeTracker",
-            start_url: "./",
-            display: "standalone",
-            background_color: "#0A0E1A",
-            theme_color: "#26A69A",
-            orientation: "portrait",
-            icons: [{
-                src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%234DB6AC'/%3E%3Cstop offset='1' stop-color='%2300796B'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' fill='url(%23g)'/%3E%3Cpath d='M55 18 26 56h22l-4 26 30-40H52z' fill='white'/%3E%3C/svg%3E",
-                sizes: "512x512",
-                type: "image/svg+xml",
-                purpose: "any maskable"
-            }]
-        };
-        const link = document.createElement('link');
-        link.rel = 'manifest';
-        link.href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], {type: 'application/json'}));
-        document.head.appendChild(link);
 
         // PWA INSTALL
         let deferredPrompt;
@@ -932,6 +954,11 @@
         // changement de structure (ajout, suppression, chargement, effacement,
         // pointage), jamais pendant une saisie : sinon le focus sauterait.
         let rows = [];
+        // Jour (AAAA-MM-JJ local) de la dernière sauvegarde ; null pour des données
+        // enregistrées avant l'ajout de ce champ (on ne vide alors rien).
+        let lastDay = null;
+        // Journée précédente, en lecture seule : { date, tempsDu, pause, rows }.
+        let veille = null;
 
         const $ = id => document.getElementById(id);
         const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -945,6 +972,7 @@
             } else {
                 for (let i = 0; i < 3; i++) addRow();
             }
+            checkNewDay();
             calculate();
             startClock();
         };
@@ -1004,14 +1032,14 @@
          * Accueil adaptatif (« cadre fermé ») : l'état vient de règles fixes, sans
          * modèle. Le héros reste en tête ; seuls les blocs en dessous changent d'ordre,
          * aucun n'apparaît ni ne disparaît. Une pastille dit pourquoi un bloc remonte.
-         * Les paramètres restent toujours en dernier.
+         * La journée précédente puis les paramètres restent toujours en dernier.
          */
         const LIMIT_WARN_H = 0.5; // ambiance « limite » à 30 min de la limite 9h
         const ORDERS = {
-            vide:    ['creneaux', 'chiffres', 'frise', 'params'],
-            encours: ['frise', 'chiffres', 'creneaux', 'params'],
-            faites:  ['chiffres', 'frise', 'creneaux', 'params'],
-            limite:  ['frise', 'creneaux', 'chiffres', 'params'],
+            vide:    ['creneaux', 'chiffres', 'frise', 'veille', 'params'],
+            encours: ['frise', 'chiffres', 'creneaux', 'veille', 'params'],
+            faites:  ['chiffres', 'frise', 'creneaux', 'veille', 'params'],
+            limite:  ['frise', 'creneaux', 'chiffres', 'veille', 'params'],
         };
         const WHY = {
             vide: { creneaux: 'remonté : rien de pointé' },
@@ -1120,6 +1148,7 @@
             renderNumbers(r);
             updateRows(r);
             renderTimeline(r);
+            renderVeille();
 
             ORDERS[r.state].forEach((id, k) => {
                 const b = document.querySelector(`[data-block="${id}"]`);
@@ -1203,6 +1232,33 @@
             renderRows();
             buzz([10, 40, 10]);
             calculate();
+            offerPunchFix(t.index, t.key);
+        }
+
+        /*
+         * Pointage oublié : juste après un pointage, le toast propose de reculer
+         * l'heure pointée de 5 ou 15 min (cumulable). Jamais avant minuit, et une
+         * sortie jamais avant l'entrée du même créneau.
+         */
+        const PUNCH_FIX_MS = 8000;
+
+        function offerPunchFix(index, key) {
+            const label = () => `${key === 'fin' ? 'Sortie' : 'Entrée'} ${rows[index] ? rows[index][key] : ''}`;
+            const shift = minutes => () => {
+                const row = rows[index];
+                if (!row || !row[key]) return;
+                const next = timeToDecimal(row[key]) - minutes / 60;
+                if (next < 0) return;
+                if (key === 'fin' && row.debut && next < timeToDecimal(row.debut)) return;
+                row[key] = decimalToTime(next);
+                renderRows();
+                calculate();
+                $('toastTxt').textContent = label();
+            };
+            showToast(label(), [
+                { label: '−5 min', keep: true, fn: shift(5) },
+                { label: '−15 min', keep: true, fn: shift(15) },
+            ], PUNCH_FIX_MS);
         }
 
         function renderNumbers(r) {
@@ -1341,7 +1397,12 @@
             let last = minuteKey();
             const check = force => {
                 const k = minuteKey();
-                if (force === true || k !== last) { last = k; render(); }
+                if (force === true || k !== last) {
+                    last = k;
+                    // Application restée ouverte après minuit : même règle qu'à l'ouverture.
+                    if (lastDay && lastDay !== todayKey() && checkNewDay()) calculate();
+                    else render();
+                }
             };
             setInterval(check, 1000);
             document.addEventListener('visibilitychange', () => { if (!document.hidden) check(true); });
@@ -1358,43 +1419,134 @@
         });
 
         /*
+         * Toast d'action : un message et des boutons (44 px). Une action `keep`
+         * laisse le toast ouvert et relance son délai (corrections successives).
+         */
+        let toastTimer;
+        function showToast(text, actions, ms) {
+            const t = $('toast');
+            $('toastTxt').textContent = text;
+            const box = $('toastActions');
+            box.innerHTML = '';
+            const arm = () => { clearTimeout(toastTimer); toastTimer = setTimeout(hideToast, ms); };
+            (actions || []).forEach(a => {
+                const b = document.createElement('button');
+                b.className = 'press';
+                b.textContent = a.label;
+                b.onclick = () => { a.fn(); buzz(8); if (a.keep) arm(); else hideToast(); };
+                box.appendChild(b);
+            });
+            t.classList.add('on');
+            arm();
+        }
+        function hideToast() {
+            clearTimeout(toastTimer);
+            $('toast').classList.remove('on');
+        }
+
+        const emptyRows = () => [0, 1, 2].map(() => ({ debut: '', fin: '' }));
+        const copyRows = list => list.map(r => ({ debut: r.debut, fin: r.fin }));
+
+        /*
          * Effacer remet tous les créneaux à zéro (3 lignes vides) et garde le temps
-         * dû et la pause. Pas de confirm() bloquant : l'action est immédiate et
-         * annulable pendant UNDO_MS via le toast.
+         * dû, la pause et la journée précédente. Pas de confirm() bloquant :
+         * l'action est immédiate et annulable pendant UNDO_MS.
          */
         const UNDO_MS = 6000;
-        let undoRows = null;
-        let toastTimer;
 
         function clearAll() {
-            undoRows = rows.map(r => ({ ...r }));
-            rows = [];
-            for (let i = 0; i < 3; i++) rows.push({ debut: '', fin: '' });
+            const before = copyRows(rows);
+            rows = emptyRows();
             renderRows();
             calculate();
             buzz(20);
-            const t = $('toast');
-            t.classList.add('on');
-            clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => { t.classList.remove('on'); undoRows = null; }, UNDO_MS);
+            showToast('Créneaux effacés', [{ label: 'Annuler', fn: () => {
+                rows = before;
+                renderRows();
+                calculate();
+            } }], UNDO_MS);
         }
 
-        function undoClear() {
-            if (!undoRows) return;
-            rows = undoRows;
-            undoRows = null;
+        function todayKey(d = new Date()) {
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        // « lundi 12 octobre », ou « Hier » si c'est la veille du jour courant.
+        function dayLabel(key) {
+            const [y, m, d] = key.split('-').map(Number);
+            const date = new Date(y, m - 1, d);
+            const y1 = new Date(); y1.setDate(y1.getDate() - 1);
+            if (todayKey(y1) === key) return 'Hier';
+            return date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+        }
+
+        /*
+         * Nouvelle journée : à la première ouverture d'un autre jour que celui de la
+         * dernière sauvegarde, les créneaux passent dans « journée précédente »
+         * (lecture seule) et la journée repart de 3 lignes vides. Temps dû et pause
+         * sont gardés. Rien n'est vidé :
+         *   - si un créneau est ouvert (journée qui passe minuit) ;
+         *   - si les données n'ont pas encore de date (première ouverture après la
+         *     mise à jour qui a ajouté ce champ) ;
+         *   - si aucun créneau n'a été saisi (la veille précédente est gardée).
+         * Annulable pendant NEW_DAY_UNDO_MS. Renvoie true si quelque chose a changé.
+         */
+        const NEW_DAY_UNDO_MS = 10000;
+
+        function checkNewDay() {
+            const today = todayKey();
+            if (!lastDay || lastDay === today) return false;
+            if (getActiveRow().hasActive) return false;
+            const day = lastDay;
+            lastDay = today;
+            if (!rows.some(r => r.debut || r.fin)) return false;
+
+            const prevRows = copyRows(rows), prevVeille = veille;
+            veille = { date: day, tempsDu: $('tempsDu').value, pause: $('pause').value, rows: prevRows };
+            rows = emptyRows();
             renderRows();
-            calculate();
-            clearTimeout(toastTimer);
-            $('toast').classList.remove('on');
-            buzz(8);
+            showToast('Nouvelle journée. Hier est rangé plus bas.', [{ label: 'Annuler', fn: () => {
+                rows = prevRows;
+                veille = prevVeille;
+                renderRows();
+                calculate();
+            } }], NEW_DAY_UNDO_MS);
+            return true;
+        }
+
+        function renderVeille() {
+            const block = document.querySelector('[data-block="veille"]');
+            block.hidden = !veille;
+            if (!veille) return;
+            const du = parseFloat(veille.tempsDu) || 0, pause = parseFloat(veille.pause) || 0;
+            let total = 0;
+            const lines = veille.rows.filter(r => r.debut || r.fin).map(r => {
+                let dur = null;
+                if (r.debut && r.fin) {
+                    dur = timeToDecimal(r.fin) - timeToDecimal(r.debut);
+                    if (dur < 0) dur += 24;
+                    total += dur;
+                }
+                return `<div class="prev-row"><b>${r.debut || '--:--'} – ${r.fin || '--:--'}</b><span>${dur != null ? hm(dur) : 'non fermé'}</span></div>`;
+            });
+            const diff = total + pause - du;
+            const label = dayLabel(veille.date);
+            $('prevTitle').textContent = label === 'Hier' ? 'Hier' : `Journée précédente · ${label}`;
+            $('prevList').innerHTML = lines.join('');
+            $('prevTotal').textContent = hm(total);
+            const d = $('prevDiff');
+            d.textContent = hm(diff, true);
+            d.className = 'tile-val ' + (diff >= 0 ? 'positive' : 'negative');
         }
 
         function saveData() {
+            lastDay = todayKey();
             const data = {
                 tempsDu: $('tempsDu').value,
                 pause: $('pause').value,
-                rows: rows.map(r => ({ debut: r.debut, fin: r.fin }))
+                rows: rows.map(r => ({ debut: r.debut, fin: r.fin })),
+                date: lastDay,
+                veille: veille
             };
             localStorage.setItem('horaireData', JSON.stringify(data));
         }
@@ -1405,6 +1557,8 @@
                 $('tempsDu').value = data.tempsDu || 8.26;
                 $('pause').value = data.pause || 0.34;
                 rows = (data.rows || []).map(r => ({ debut: r.debut || '', fin: r.fin || '' }));
+                lastDay = data.date || null;
+                veille = data.veille || null;
                 renderRows();
             }
         }
