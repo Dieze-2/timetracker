@@ -1269,11 +1269,26 @@
                     : '');
         }
 
-        // Rafraîchissement chaque minute (calé sur la minute), en pause onglet caché.
+        /*
+         * Rafraîchissement au changement de minute de l'horloge de l'appareil.
+         * On vérifie chaque seconde si la minute a changé (coût négligeable : on ne
+         * redessine que dans ce cas) plutôt qu'un minuteur de 60 s : ce dernier
+         * dérive, est retardé ou gelé sur mobile, et ne doit pas dépendre de
+         * document.hidden, que certains cadres intégrés déclarent à tort (mesuré :
+         * horloge figée). Le navigateur ralentit lui-même les minuteurs d'un onglet
+         * en arrière-plan ; au retour, on redessine immédiatement.
+         */
         function startClock() {
-            const tick = () => { if (!document.hidden) render(); };
-            setTimeout(() => { tick(); setInterval(tick, 60000); }, (60 - new Date().getSeconds()) * 1000 + 50);
-            document.addEventListener('visibilitychange', tick);
+            const minuteKey = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
+            let last = minuteKey();
+            const check = force => {
+                const k = minuteKey();
+                if (force === true || k !== last) { last = k; render(); }
+            };
+            setInterval(check, 1000);
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) check(true); });
+            window.addEventListener('focus', () => check(true));
+            window.addEventListener('pageshow', () => check(true));
         }
 
         // Saisie dans les créneaux : on met à jour l'état sans reconstruire les champs.
