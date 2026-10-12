@@ -323,7 +323,7 @@
             font-variant-numeric: tabular-nums;
             margin: 4px 0 6px;
         }
-        .mega.off { color: var(--muted); opacity: .5; font-family: var(--f-body); font-weight: 600; letter-spacing: .04em; }
+        .mega.off, .limit-row .val.off { color: var(--muted); opacity: .5; font-family: var(--f-body); font-weight: 600; letter-spacing: .04em; font-size: var(--t-xl); }
         .sub { color: var(--muted); text-wrap: balance; }
         .sub b { color: var(--fg); font-weight: 600; }
 
@@ -352,8 +352,6 @@
         .ring .lbl small { font-size: var(--t-micro); color: var(--muted); text-transform: uppercase; letter-spacing: .12em; }
 
         /* Saisie rapide : visible à l'ouverture, sans défiler */
-        .quick { display: grid; gap: 8px; }
-        .quick-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 8px; }
 
         .inp {
             width: 100%;
@@ -380,15 +378,15 @@
         }
         input[type="time"]::-webkit-datetime-edit { padding: 0; }
         input[type="time"]::-webkit-datetime-edit-fields-wrapper { display: flex; justify-content: center; }
-        .quick .inp { min-height: 52px; }
 
         /* CTA principal + balayage lumineux */
         .cta {
             position: relative;
             overflow: hidden;
-            min-height: 52px;
+            width: 100%;
+            min-height: 56px;
             border: 0;
-            border-radius: 16px;
+            border-radius: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -397,6 +395,7 @@
             background: var(--accent);
             color: var(--accent-ink);
             font-weight: 600;
+            font-size: var(--t-lg);
             line-height: 1.2;
             text-align: center;
             box-shadow: 0 0 32px -6px color-mix(in srgb, var(--accent) 70%, transparent);
@@ -637,7 +636,6 @@
             width: 100%;
         }
 
-        .buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
         .btn {
             min-height: 48px;
             border-radius: 16px;
@@ -648,8 +646,7 @@
             font-weight: 600;
             padding: 8px 12px;
         }
-        .btn-clear { border: 1.5px solid color-mix(in srgb, var(--neg) 60%, transparent); background: transparent; color: var(--neg); }
-        .btn-save { border: 1.5px solid var(--line); background: var(--surface-hi); color: var(--fg); }
+        .btn-clear { width: 100%; border: 1.5px solid color-mix(in srgb, var(--neg) 60%, transparent); background: transparent; color: var(--neg); }
 
         .info-message {
             display: flex;
@@ -685,6 +682,16 @@
             transition: transform .35s var(--ease), opacity .2s, visibility .35s;
         }
         .toast.on { transform: translate(-50%, 0); opacity: 1; visibility: visible; }
+        .toast { padding: 4px 4px 4px 18px; max-width: calc(100% - 32px); }
+        .toast button {
+            min-height: 44px;
+            padding: 0 16px;
+            border: 0;
+            border-radius: 999px;
+            background: var(--accent);
+            color: var(--accent-ink);
+            font-weight: 600;
+        }
 
         .install-prompt {
             position: fixed;
@@ -729,11 +736,9 @@
         <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
         <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
         <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
-        <symbol id="i-save" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></symbol>
         <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
         <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
         <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
-        <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></symbol>
         <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
     </svg>
 
@@ -768,15 +773,9 @@
                 </div>
             </div>
 
-            <div class="quick">
-                <label class="eyebrow" for="quickTime" id="quickLbl">Arrivée</label>
-                <div class="quick-row">
-                    <input class="inp" type="time" id="quickTime" aria-describedby="quickLbl">
-                    <button class="cta press" id="ctaPunch" onclick="punch()">
-                        <svg class="i"><use href="#i-clock"/></svg><span id="ctaTxt">Pointer</span>
-                    </button>
-                </div>
-            </div>
+            <button class="cta press" id="ctaPunch" onclick="punch()">
+                <svg class="i"><use href="#i-clock"/></svg><span id="ctaTxt">Pointer entrée</span>
+            </button>
 
             <div class="limit-row">
                 <div class="ic"><svg class="i"><use href="#i-flag"/></svg></div>
@@ -847,10 +846,9 @@
             </section>
         </div>
 
-        <div class="buttons rise" style="--i:5">
-            <button class="btn btn-clear press" onclick="clearAll()"><svg class="i"><use href="#i-trash"/></svg>Effacer</button>
-            <button class="btn btn-save press" onclick="saveData(); showToast()"><svg class="i"><use href="#i-save"/></svg>Sauvegarder</button>
-        </div>
+        <button class="btn btn-clear press rise" style="--i:5" onclick="clearAll()">
+            <svg class="i"><use href="#i-trash"/></svg>Effacer tous les créneaux
+        </button>
 
         <div class="info-message rise" style="--i:6">
             <svg class="i"><use href="#i-info"/></svg>
@@ -858,7 +856,10 @@
         </div>
     </div>
 
-    <div class="toast" id="toast" role="status"><svg class="i"><use href="#i-check"/></svg>Enregistré</div>
+    <div class="toast" id="toast" role="status">
+        <span id="toastTxt">Créneaux effacés</span>
+        <button class="press" id="undoBtn" onclick="undoClear()">Annuler</button>
+    </div>
 
     <script>
         // SERVICE WORKER
@@ -1026,12 +1027,18 @@
             if (active.hasActive) {
                 r.partir = active.decimal + (du - total - pause);
                 r.lim = active.decimal + (9 - total);
+                // Temps écoulé dans le créneau ouvert. Un début « après maintenant »
+                // n'est un créneau de nuit (passage de minuit) que s'il est à plus
+                // de 12 h ; sinon le créneau n'a pas commencé : 0, pas +24 h.
                 let el = now - active.decimal;
-                if (el < 0) el += 24;
+                r.notStarted = el < 0 && el > -12;
+                if (el < 0) el = r.notStarted ? 0 : el + 24;
                 r.elapsed = el;
+                // Rebours, anneau et état lisent la même quantité : travail fait
+                // (créneaux fermés + écoulé) + pause, comparé au temps dû.
                 r.progress = du > 0 ? (total + el + pause) / du : 0;
-                r.toGo = r.partir - now;
-                r.toLim = r.lim - now;
+                r.toGo = du - total - el - pause;
+                r.toLim = 9 - total - el;
             }
             r.state = homeState(r);
             return r;
@@ -1095,18 +1102,23 @@
             const has = r.active.hasActive;
             $('statusTxt').textContent = !has && r.any
                 ? (r.diff >= 0 ? 'Heures faites' : 'Aucun créneau ouvert')
-                : STATUS[r.state];
+                : (r.state === 'limite' && r.toLim <= 0 ? 'Limite 9h dépassée' : STATUS[r.state]);
 
             const partir = $('partirHeures');
             partir.textContent = has ? decimalToTime(r.partir) : '--:--';
             partir.classList.toggle('off', !has);
             $('partir9h').textContent = has ? decimalToTime(r.lim) : '--:--';
+            $('partir9h').classList.toggle('off', !has);
             $('heroHint').hidden = has;
 
             if (has) {
-                $('heroSub').innerHTML = r.toGo > 0
-                    ? `encore <b>${hm(r.toGo)}</b> pour faire tes heures`
+                const start = rows[r.active.index].debut;
+                if (r.toGo <= 0) $('heroSub').innerHTML = r.notStarted
+                    ? `heures déjà faites avant le créneau de <b>${start}</b>`
                     : `heures faites depuis <b>${hm(-r.toGo)}</b>`;
+                else $('heroSub').innerHTML = r.notStarted
+                    ? `créneau prévu à <b>${start}</b>, encore <b>${hm(r.toGo)}</b> à faire`
+                    : `encore <b>${hm(r.toGo)}</b> pour faire tes heures`;
                 $('limSub').textContent = r.toLim > 0 ? `dans ${hm(r.toLim)}` : `dépassée de ${hm(-r.toLim)}`;
             } else {
                 $('heroSub').textContent = r.any ? 'ouvre un créneau pour voir tes heures de départ' : 'commence par ton heure d\'arrivée';
@@ -1131,26 +1143,24 @@
             return { index: i, key: 'debut' };
         }
 
+        // Le libellé dit ce que le bouton va écrire : sortie si un créneau est ouvert.
         function renderQuick(r) {
             const t = quickTarget();
-            let lbl;
-            if (t.key === 'fin') lbl = `Sortie · créneau ouvert à ${rows[t.index].debut}`;
-            else if (t.index >= 0) lbl = `Arrivée · créneau ${t.index + 1}`;
-            else lbl = 'Arrivée · nouveau créneau';
-            $('quickLbl').textContent = lbl;
-            const pending = $('quickTime').value;
-            $('ctaTxt').textContent = pending ? `Valider ${pending}` : `Pointer ${decimalToTime(r.now)}`;
+            const what = t.key === 'fin' ? 'sortie' : 'entrée';
+            $('ctaTxt').textContent = `Pointer ${what} · ${decimalToTime(r.now)}`;
+            $('ctaPunch').setAttribute('aria-label', t.key === 'fin'
+                ? `Pointer la sortie du créneau ouvert à ${rows[t.index].debut}, à ${decimalToTime(r.now)}`
+                : `Pointer l'entrée à ${decimalToTime(r.now)}`);
         }
 
         function punch() {
-            const value = $('quickTime').value || decimalToTime(nowDecimal());
+            const value = decimalToTime(nowDecimal());
             const t = quickTarget();
             if (t.index < 0) {
                 rows.push({ debut: '', fin: '' });
                 t.index = rows.length - 1;
             }
             rows[t.index][t.key] = value;
-            $('quickTime').value = '';
             renderRows();
             buzz([10, 40, 10]);
             calculate();
@@ -1273,18 +1283,38 @@
             rows[+t.dataset.i][t.dataset.k] = t.value;
             calculate();
         });
-        $('quickTime').addEventListener('input', () => renderQuick({ now: nowDecimal() }));
-        $('quickTime').addEventListener('keydown', e => { if (e.key === 'Enter') punch(); });
+
+        /*
+         * Effacer remet tous les créneaux à zéro (3 lignes vides) et garde le temps
+         * dû et la pause. Pas de confirm() bloquant : l'action est immédiate et
+         * annulable pendant UNDO_MS via le toast.
+         */
+        const UNDO_MS = 6000;
+        let undoRows = null;
+        let toastTimer;
 
         function clearAll() {
-            if (confirm('Tout effacer ?')) {
-                rows = [];
-                for (let i = 0; i < 3; i++) rows.push({ debut: '', fin: '' });
-                renderRows();
-                calculate();
-                localStorage.removeItem('horaireData');
-                buzz(20);
-            }
+            undoRows = rows.map(r => ({ ...r }));
+            rows = [];
+            for (let i = 0; i < 3; i++) rows.push({ debut: '', fin: '' });
+            renderRows();
+            calculate();
+            buzz(20);
+            const t = $('toast');
+            t.classList.add('on');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => { t.classList.remove('on'); undoRows = null; }, UNDO_MS);
+        }
+
+        function undoClear() {
+            if (!undoRows) return;
+            rows = undoRows;
+            undoRows = null;
+            renderRows();
+            calculate();
+            clearTimeout(toastTimer);
+            $('toast').classList.remove('on');
+            buzz(8);
         }
 
         function saveData() {
@@ -1294,15 +1324,6 @@
                 rows: rows.map(r => ({ debut: r.debut, fin: r.fin }))
             };
             localStorage.setItem('horaireData', JSON.stringify(data));
-        }
-
-        let toastTimer;
-        function showToast() {
-            const t = $('toast');
-            t.classList.add('on');
-            buzz(8);
-            clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => t.classList.remove('on'), 1600);
         }
 
         function loadData() {
