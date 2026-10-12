@@ -842,6 +842,9 @@
                 <button class="btn-add press" onclick="addRow(); render(); buzz(8)">
                     <svg class="i"><use href="#i-plus"/></svg>Ajouter un créneau
                 </button>
+                <button class="btn btn-clear press" onclick="clearAll()">
+                    <svg class="i"><use href="#i-trash"/></svg>Effacer tous les créneaux
+                </button>
             </section>
 
             <section class="block rise" data-block="params" style="--i:4">
@@ -862,9 +865,6 @@
             </section>
         </div>
 
-        <button class="btn btn-clear press rise" style="--i:5" onclick="clearAll()">
-            <svg class="i"><use href="#i-trash"/></svg>Effacer tous les créneaux
-        </button>
 
         <div class="info-message rise" style="--i:6">
             <svg class="i"><use href="#i-info"/></svg>
@@ -1004,10 +1004,11 @@
          * Accueil adaptatif (« cadre fermé ») : l'état vient de règles fixes, sans
          * modèle. Le héros reste en tête ; seuls les blocs en dessous changent d'ordre,
          * aucun n'apparaît ni ne disparaît. Une pastille dit pourquoi un bloc remonte.
+         * Les paramètres restent toujours en dernier.
          */
         const LIMIT_WARN_H = 0.5; // ambiance « limite » à 30 min de la limite 9h
         const ORDERS = {
-            vide:    ['creneaux', 'params', 'chiffres', 'frise'],
+            vide:    ['creneaux', 'chiffres', 'frise', 'params'],
             encours: ['frise', 'chiffres', 'creneaux', 'params'],
             faites:  ['chiffres', 'frise', 'creneaux', 'params'],
             limite:  ['frise', 'creneaux', 'chiffres', 'params'],
