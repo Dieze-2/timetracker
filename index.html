@@ -135,6 +135,9 @@
         html, body {
             width: 100%;
             overflow-x: hidden;
+            /* clip : coupe sans créer de conteneur de défilement (sinon le héros
+               collant du grand écran ne colle plus). hidden reste en repli. */
+            overflow-x: clip;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
@@ -757,9 +760,85 @@
             @keyframes slideInUp { from { transform: translate(-50%, 100px); opacity: 0; } }
         }
 
+        /*
+         * Mobile : une seule colonne. `.side` s'efface (display: contents) pour que
+         * le héros reste en tête et que l'info passe après les blocs.
+         */
+        .layout { display: flex; flex-direction: column; gap: 14px; }
+        .side { display: contents; }
+        .side .hero { order: 0; }
+        .layout > .blocks { order: 1; }
+        .side .info-message { order: 2; }
+        .rows-actions { display: grid; gap: 10px; }
+
         @media (min-width: 768px) {
             body { padding-top: 0; }
             .hero { padding: 24px; }
+        }
+
+        /*
+         * Grand écran (≥ 1024 px), comme CoachMe : composition FIXE, l'ordre adaptatif
+         * ne s'applique que sous ce seuil (la place suffit à tout voir). Colonne
+         * gauche collante = héros + pointage, toujours à portée ; colonne droite =
+         * blocs dans un ordre stable. En-tête statique, sans verre.
+         */
+        @media (min-width: 1024px) {
+            body {
+                padding-left: max(40px, env(safe-area-inset-left, 0px));
+                padding-right: max(40px, env(safe-area-inset-right, 0px));
+            }
+            .container { max-width: 1240px; gap: 8px; }
+            header {
+                position: static;
+                margin: 0;
+                padding: 28px 0 24px;
+                background: transparent;
+                backdrop-filter: none;
+                -webkit-backdrop-filter: none;
+                border-bottom: 0;
+            }
+            h1 { font-size: var(--t-xl); }
+            .logo { width: 44px; height: 44px; border-radius: 13px; }
+            .logo svg { width: 24px; height: 24px; }
+
+            .layout {
+                display: grid;
+                grid-template-columns: minmax(360px, 420px) minmax(0, 1fr);
+                gap: 32px;
+                align-items: start;
+            }
+            .side {
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+                position: sticky;
+                top: 24px;
+            }
+            .hero { padding: 28px; gap: 18px; }
+            .mega { font-size: 76px; }
+            .ring { width: 112px; height: 112px; }
+
+            .blocks { gap: 28px; }
+            .blocks > [data-block="frise"] { order: 1 !important; }
+            .blocks > [data-block="chiffres"] { order: 2 !important; }
+            .blocks > [data-block="creneaux"] { order: 3 !important; }
+            .blocks > [data-block="veille"] { order: 4 !important; }
+            .blocks > [data-block="params"] { order: 5 !important; }
+            .why { display: none !important; }
+
+            .time-rows { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .rows-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .bento { gap: 14px; }
+            .card { padding: 20px; }
+            .tile-val { font-size: 32px; }
+        }
+
+        /* Survol : seulement avec une vraie souris (jamais seul indicateur) */
+        @media (hover: hover) {
+            .card, .time-card { transition: border-color var(--dur-in) var(--ease); }
+            .card:hover, .time-card:not(.live):not(.overlap):hover { border-color: var(--line); }
+            .btn-add:hover { border-color: var(--accent-hi); }
+            .delete-btn:hover, .btn-clear:hover { background: color-mix(in srgb, var(--neg) 10%, transparent); }
         }
     </style>
 </head>
@@ -792,6 +871,8 @@
         </header>
 
         <!-- Héros : heure de départ + saisie rapide, tout visible à l'ouverture -->
+        <div class="layout">
+        <div class="side">
         <section class="hero rise" style="--i:0">
             <div class="status" aria-live="polite"><span class="dot"></span><span id="statusTxt">Pas encore pointé</span></div>
 
@@ -830,6 +911,12 @@
             </div>
         </section>
 
+        <div class="info-message rise" style="--i:6">
+            <svg class="i"><use href="#i-info"/></svg>
+            <span><strong>Info :</strong> les horaires de départ s'affichent uniquement quand vous avez une ligne avec une heure de début sans heure de fin.</span>
+        </div>
+        </div>
+
         <div class="blocks">
             <section class="block rise" data-block="frise" style="--i:1">
                 <span class="why" hidden></span>
@@ -864,12 +951,14 @@
                 <span class="why" hidden></span>
                 <div class="band">Horaires</div>
                 <div class="time-rows" id="timeRows"></div>
+                <div class="rows-actions">
                 <button class="btn-add press" onclick="addRow(); render(); buzz(8)">
                     <svg class="i"><use href="#i-plus"/></svg>Ajouter un créneau
                 </button>
                 <button class="btn btn-clear press" onclick="clearAll()">
                     <svg class="i"><use href="#i-trash"/></svg>Effacer tous les créneaux
                 </button>
+                </div>
             </section>
 
             <section class="block rise" data-block="veille" style="--i:4" hidden>
@@ -907,11 +996,6 @@
                 </div>
             </section>
         </div>
-
-
-        <div class="info-message rise" style="--i:6">
-            <svg class="i"><use href="#i-info"/></svg>
-            <span><strong>Info :</strong> les horaires de départ s'affichent uniquement quand vous avez une ligne avec une heure de début sans heure de fin.</span>
         </div>
     </div>
 
