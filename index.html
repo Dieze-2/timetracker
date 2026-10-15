@@ -821,6 +821,8 @@
         .side .hero { order: 0; }
         .layout > .blocks { order: 1; }
         .rows-actions { display: grid; gap: 10px; }
+        /* Emplacement vide du compteur : ne doit pas compter dans les espacements. */
+        .counter-slot:empty { display: none; }
 
         @media (min-width: 768px) {
             body { padding-top: 0; }
@@ -863,8 +865,11 @@
                 flex-direction: column;
                 gap: 14px;
                 position: sticky;
-                top: 24px;
+                /* 24 px, ou négatif si la colonne dépasse l'écran (posé par
+                   fitSideColumn) : le bas reste alors atteignable en défilant. */
+                top: var(--side-top, 24px);
             }
+            #counterSlotSide .counter { margin-top: 0; }
             .hero { padding: 28px; gap: 18px; }
             .mega { font-size: 76px; }
             .ring { width: 112px; height: 112px; }
@@ -962,6 +967,7 @@
                 <span>Les horaires de départ s'affichent quand une ligne a une heure de début sans heure de fin.</span>
             </div>
         </section>
+        <div class="counter-slot" id="counterSlotSide"></div>
         </div>
 
         <div class="blocks">
@@ -992,6 +998,7 @@
                         <span class="sign-chip" id="diffChip"></span>
                     </div>
                 </div>
+                <div class="counter-slot" id="counterSlotMain">
                 <div class="card counter" id="counterCard">
                     <div class="counter-head">
                         <span class="tile-label">Solde d'hier</span>
@@ -1027,6 +1034,7 @@
                             <button type="submit" class="btn btn-ok press">Enregistrer</button>
                         </div>
                     </form>
+                </div>
                 </div>
             </section>
 
@@ -1145,7 +1153,33 @@
             checkNewDay();
             calculate();
             startClock();
+            placeCounter();
+            WIDE.addEventListener('change', placeCounter);
+            if ('ResizeObserver' in window) new ResizeObserver(fitSideColumn).observe(document.querySelector('.side'));
+            window.addEventListener('resize', fitSideColumn);
         };
+
+        /*
+         * Compteur : sur grand écran il vit dans la colonne gauche, sous le héros ;
+         * en dessous de 1024 px, dans le tableau de bord. Un seul élément déplacé
+         * (pas de copie) : identifiants, état de la saisie et écouteurs suivent.
+         */
+        const WIDE = window.matchMedia('(min-width: 1024px)');
+        function placeCounter() {
+            const card = $('counterCard');
+            const slot = WIDE.matches ? $('counterSlotSide') : $('counterSlotMain');
+            if (card.parentNode !== slot) slot.appendChild(card);
+            fitSideColumn();
+        }
+
+        // Colonne collante plus haute que l'écran : on la décale vers le haut
+        // d'autant, pour que son bas (correction du compteur) reste visible.
+        function fitSideColumn() {
+            const side = document.querySelector('.side');
+            if (!WIDE.matches) { side.style.removeProperty('--side-top'); return; }
+            const top = Math.min(24, window.innerHeight - side.offsetHeight - 24);
+            side.style.setProperty('--side-top', top + 'px');
+        }
 
         function addRow() {
             rows.push({ debut: '', fin: '' });
