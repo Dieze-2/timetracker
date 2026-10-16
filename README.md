@@ -56,6 +56,7 @@ Un seul fichier `index.html` (HTML, CSS et JavaScript sans framework ni étape d
 
 ```
 index.html     l'application (styles, interface et logique)
+tests/         tests navigateur et version d'origine figée (référence)
 sw.js          service worker : cache hors ligne
 manifest.json  manifeste PWA (nom, couleurs, icônes)
 icons/         icônes PNG 180, 192, 512 et 512 « maskable »
@@ -64,7 +65,7 @@ fonts/         Bricolage Grotesque et Instrument Sans (woff2, licence OFL 1.1)
 
 ## Développement
 
-Aucune dépendance ni build. Pour tester avec le service worker, servir le dossier en HTTP (un `file://` ne l'active pas) :
+L'app n'a aucune dépendance ni build (`package.json` ne sert qu'aux tests). Pour l'essayer avec le service worker, servir le dossier en HTTP (un `file://` ne l'active pas) :
 
 ```bash
 python3 -m http.server 8000
@@ -72,6 +73,26 @@ python3 -m http.server 8000
 ```
 
 La page est servie « réseau d'abord » : une nouvelle version d'`index.html` arrive dès qu'il y a du réseau. Les polices, icônes et le manifeste sont servis « cache d'abord » : après les avoir modifiés, incrémenter `CACHE_NAME` dans `sw.js` pour que les appareils installés les récupèrent.
+
+## Tests
+
+Tests navigateur automatisés (Playwright, Chromium), lancés par GitHub Actions à chaque pull request et à chaque push sur `main` (`.github/workflows/tests.yml`). En local :
+
+```bash
+npm ci
+npx playwright install chromium   # une fois
+npm test                          # toutes les suites (environ 5 min)
+npm test -- mobile                # une seule suite
+```
+
+| Suite | Ce qu'elle vérifie |
+|---|---|
+| `mobile` | calculs identiques à la version d'origine (`tests/legacy/`), pointage, correction, effacement, nouvelle journée, compteur et plafond mensuel, chevauchement, horloge (minute et secondes), mise en page à 360-390 px sans débordement, thème, installabilité, animations réduites |
+| `desktop` | grand écran (1024 à 1920 px) : deux colonnes, héros et compteur à gauche, ordre fixe, colonne collante |
+| `cta` | libellé du bouton de pointage sur une ligne de 360 à 1280 px |
+| `security` | données piégées dans le stockage, stockage corrompu, CSP, page d'erreur et cache hors ligne |
+
+Les tests utilisent une horloge simulée : aucune dépendance à l'heure réelle. Les captures sont écrites dans `tests/output/` (ignoré par Git) et jointes au run GitHub en cas d'échec.
 
 ## Licences
 
