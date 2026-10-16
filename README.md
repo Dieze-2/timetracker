@@ -38,6 +38,15 @@ Un seul fichier `index.html` (HTML, CSS et JavaScript sans framework ni étape d
 - Clés : `horaireData` (temps dû, pause, créneaux, date, journée précédente, compteur) et `theme`.
 - Les données ne se synchronisent pas entre appareils ni entre navigateurs, et sont perdues si l'on efface les données du site. Sur iPhone, installer l'app sur l'écran d'accueil évite l'effacement automatique de Safari après plusieurs jours sans visite.
 
+## Sécurité
+
+- Aucun secret, aucune dépendance tierce, aucun appel réseau sortant.
+- **Politique de sécurité du contenu** (balise `Content-Security-Policy`) : tout doit venir de la même origine ; images, polices, connexions et formulaires vers un autre domaine sont bloqués. `'unsafe-inline'` reste nécessaire tant que le script et les styles sont intégrés à la page.
+- **Données relues validées** : heures au format `HH:MM`, dates `AAAA-MM-JJ`, nombres bornés ; toute autre valeur est ignorée. Le `localStorage` est partagé par toutes les pages d'une même origine (sur `*.github.io`, tous les projets du même compte) : sans cette validation, une valeur injectée par une autre page pouvait s'exécuter dans l'app.
+- Un stockage illisible ne bloque plus l'app : elle repart d'une journée vide.
+- Le service worker ne met en cache que la vraie page (réponse 200, même origine, sans redirection) : une page d'erreur ne peut plus remplacer l'app hors ligne.
+- Limites connues : la protection contre l'intégration dans une autre page (`frame-ancestors`, en-têtes HTTP) ne peut pas être posée par une balise `<meta>` ; elle dépend de l'hébergeur. Les données sont stockées en clair sur l'appareil.
+
 ## Installation et hors ligne
 
 - Ouvrir l'app dans le navigateur, puis « Ajouter à l'écran d'accueil » (iOS) ou « Installer l'application » (Android, Chrome).

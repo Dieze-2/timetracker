@@ -1,4 +1,4 @@
-const CACHE_NAME = 'time-tracker-v3';
+const CACHE_NAME = 'time-tracker-v4';
 const APP_SHELL = [
   './',
   './index.html',
@@ -48,11 +48,17 @@ self.addEventListener('fetch', event => {
     event.respondWith(
       fetch(request)
         .then(response => {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put('./index.html', responseClone);
-            cache.put('./', responseClone.clone());
-          });
+          // On ne met en cache que la vraie page : une 404, une erreur serveur
+          // ou une redirection remplaceraient sinon l'app hors ligne.
+          if (response.ok && response.type === 'basic' && !response.redirected) {
+            // Deux copies prises AVANT tout put() : cloner un corps déjà lu échoue.
+            const forIndex = response.clone();
+            const forRoot = response.clone();
+            caches.open(CACHE_NAME).then(cache => Promise.all([
+              cache.put('./index.html', forIndex),
+              cache.put('./', forRoot)
+            ])).catch(() => {});
+          }
           return response;
         })
         .catch(() => caches.match('./index.html').then(cached => cached || caches.match('./')))

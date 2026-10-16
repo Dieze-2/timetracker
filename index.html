@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- CSP : l'app n'appelle aucun service externe. 'unsafe-inline' reste requis
+         (script et styles intégrés, onclick) ; le gain est de bloquer toute sortie
+         vers un autre domaine (connect, img, font, form) si du code injecté s'exécutait. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 
     <!-- PWA Meta Tags -->
     <meta name="description" content="Suivi intelligent de vos horaires de travail">
@@ -1906,19 +1910,45 @@
             localStorage.setItem('horaireData', JSON.stringify(data));
         }
 
+        /*
+         * Les données relues du stockage sont VALIDÉES avant usage : certaines
+         * passent dans du HTML (innerHTML des créneaux, de « Hier », du héros).
+         * Le localStorage est partagé par toutes les pages de la même origine
+         * (sur *.github.io : tous les projets du même compte) ; une valeur
+         * injectée ailleurs ne doit pas pouvoir s'exécuter ici. Une valeur
+         * invalide est ignorée, jamais affichée telle quelle.
+         */
+        const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+        const DAY_RE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+        const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
+        const cleanTime = v => (typeof v === 'string' && TIME_RE.test(v) ? v : '');
+        const cleanNum = (v, def) => { const n = parseFloat(v); return Number.isFinite(n) && n >= 0 && n <= 24 ? String(n) : String(def); };
+        const cleanRows = list => (Array.isArray(list) ? list : [])
+            .filter(r => r && typeof r === 'object')
+            .map(r => ({ debut: cleanTime(r.debut), fin: cleanTime(r.fin) }));
+
         function loadData() {
-            const data = JSON.parse(localStorage.getItem('horaireData'));
-            if (data) {
-                $('tempsDu').value = data.tempsDu || 8.26;
-                $('pause').value = data.pause || 0.34;
-                rows = (data.rows || []).map(r => ({ debut: r.debut || '', fin: r.fin || '' }));
-                lastDay = data.date || null;
-                veille = data.veille || null;
-                if (data.compteur && Number.isFinite(data.compteur.minutes)) {
-                    compteur = { minutes: Math.round(data.compteur.minutes), month: data.compteur.month || monthKey() };
-                }
-                renderRows();
+            let data = null;
+            try { data = JSON.parse(localStorage.getItem('horaireData')); } catch (e) { data = null; }
+            if (!data || typeof data !== 'object') {
+                // Stockage illisible : on repart d'une journée vide plutôt que d'une page blanche.
+                for (let i = 0; i < 3; i++) addRow();
+                return;
             }
+            $('tempsDu').value = cleanNum(data.tempsDu || 8.26, 8.26);
+            $('pause').value = cleanNum(data.pause || 0.34, 0.34);
+            rows = cleanRows(data.rows);
+            lastDay = typeof data.date === 'string' && DAY_RE.test(data.date) ? data.date : null;
+            const v = data.veille;
+            veille = v && typeof v === 'object' && typeof v.date === 'string' && DAY_RE.test(v.date)
+                ? { date: v.date, tempsDu: cleanNum(v.tempsDu, 8.26), pause: cleanNum(v.pause, 0.34), rows: cleanRows(v.rows) }
+                : null;
+            if (data.compteur && Number.isFinite(data.compteur.minutes)) {
+                const minutes = Math.max(-99999, Math.min(99999, Math.round(data.compteur.minutes)));
+                const month = typeof data.compteur.month === 'string' && MONTH_RE.test(data.compteur.month) ? data.compteur.month : monthKey();
+                compteur = { minutes, month };
+            }
+            renderRows();
         }
 
         function toggleTheme() {
