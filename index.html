@@ -384,6 +384,8 @@
         input[type="time"]::-webkit-datetime-edit-fields-wrapper { display: flex; justify-content: center; }
 
         /* CTA principal + balayage lumineux */
+        .cta-clock { font-variant-numeric: tabular-nums; }
+        .cta-sec { opacity: .7; }
         .cta {
             position: relative;
             overflow: hidden;
@@ -1420,10 +1422,25 @@
         function renderQuick(r) {
             const t = quickTarget();
             const what = t.key === 'fin' ? 'sortie' : 'entrée';
-            $('ctaTxt').textContent = `Pointer ${what} · ${decimalToTime(r.now)}`;
+            $('ctaTxt').innerHTML = `Pointer ${what} · <span class="cta-clock" id="ctaClock"></span>`;
+            tickCtaClock();
             $('ctaPunch').setAttribute('aria-label', t.key === 'fin'
                 ? `Pointer la sortie du créneau ouvert à ${rows[t.index].debut}, à ${decimalToTime(r.now)}`
                 : `Pointer l'entrée à ${decimalToTime(r.now)}`);
+        }
+
+        /*
+         * Horloge du bouton : HH:MM:SS, mise à jour chaque seconde, pour voir la
+         * minute changer. Le pointage enregistre toujours HH:MM. aria-label (posé
+         * ci-dessus, à la minute) prime sur le contenu : rien n'est annoncé chaque
+         * seconde.
+         */
+        function tickCtaClock() {
+            const el = $('ctaClock');
+            if (!el) return;
+            const d = new Date();
+            const p2 = n => String(n).padStart(2, '0');
+            el.innerHTML = `${p2(d.getHours())}:${p2(d.getMinutes())}<span class="cta-sec">:${p2(d.getSeconds())}</span>`;
         }
 
         function punch() {
@@ -1609,7 +1626,7 @@
                     else render();
                 }
             };
-            setInterval(check, 1000);
+            setInterval(() => { tickCtaClock(); check(); }, 1000);
             document.addEventListener('visibilitychange', () => { if (!document.hidden) check(true); });
             window.addEventListener('focus', () => check(true));
             window.addEventListener('pageshow', () => check(true));
