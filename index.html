@@ -1626,7 +1626,15 @@
                     else render();
                 }
             };
-            setInterval(() => { tickCtaClock(); check(); }, 1000);
+            // Recalé sur chaque changement de seconde de l'horloge (et non un
+            // setInterval de 1 s, qui dérive de quelques ms par tour et faisait
+            // sauter ou répéter une seconde quand sa phase tombait près du bord).
+            const tick = () => {
+                tickCtaClock();
+                check();
+                setTimeout(tick, 1000 - (Date.now() % 1000) + 15);
+            };
+            setTimeout(tick, 1000 - (Date.now() % 1000) + 15);
             document.addEventListener('visibilitychange', () => { if (!document.hidden) check(true); });
             window.addEventListener('focus', () => check(true));
             window.addEventListener('pageshow', () => check(true));
