@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Suivi intelligent de vos horaires de travail">
+    <meta name="theme-color" content="#26A69A" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0A0E1A" media="(prefers-color-scheme: dark)">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TimeTracker">
+    
+    <!-- Favicon inline (SVG) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%2326A69A;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%2300796B;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' fill='url(%23grad)' rx='20'/%3E%3Ctext x='50' y='70' font-size='60' text-anchor='middle' fill='white'%3E⚡%3C/text%3E%3C/svg%3E">
+    
+    <!-- Apple Touch Icon inline -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%2326A69A;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%2300796B;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' fill='url(%23grad)' rx='40'/%3E%3Ctext x='90' y='130' font-size='110' text-anchor='middle' fill='white'%3E⚡%3C/text%3E%3C/svg%3E">
+    
+    <title>⚡ Time Tracker</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            /* Palette Teal/Cyan personnalisée */
+            --teal-50: #E0F2F1;
+            --teal-100: #B2DFDB;
+            --teal-200: #80CBC4;
+            --teal-300: #4DB6AC;
+            --teal-400: #26A69A;
+            --teal-500: #009688;
+            --teal-600: #00897B;
+            --teal-700: #00796B;
+            --teal-800: #00695C;
+            --teal-900: #004D40;
+            
+            /* Thème sombre */
+            --bg-primary: #0A0E1A;
+            --bg-secondary: #121825;
+            --bg-card: rgba(38, 166, 154, 0.08);
+            --bg-input: rgba(38, 166, 154, 0.12);
+            
+            --accent-primary: #26A69A;
+            --accent-secondary: #00897B;
+            --accent-light: #4DB6AC;
+            --accent-glow: #80CBC4;
+            
+            --text-primary: #E0F2F1;
+            --text-secondary: #80CBC4;
+            --border-color: rgba(38, 166, 154, 0.2);
+            --border-hover: rgba(77, 182, 172, 0.5);
+            --glow: rgba(77, 182, 172, 0.15);
+            
+            --success: #26A69A;
+            --error: #EF5350;
+        }
+
+        [data-theme="light"] {
+            /* Thème clair */
+            --bg-primary: #F1F8F7;
+            --bg-secondary: #E8F5F3;
+            --bg-card: rgba(38, 166, 154, 0.06);
+            --bg-input: rgba(38, 166, 154, 0.08);
+            
+            --accent-primary: #00897B;
+            --accent-secondary: #00796B;
+            --accent-light: #26A69A;
+            --accent-glow: #4DB6AC;
+            
+            --text-primary: #004D40;
+            --text-secondary: #00695C;
+            --border-color: rgba(0, 137, 123, 0.25);
+            --border-hover: rgba(0, 137, 123, 0.5);
+            --glow: rgba(38, 166, 154, 0.12);
+            
+            --success: #00897B;
+            --error: #E53935;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            padding: 20px;
+            padding-bottom: calc(20px + env(safe-area-inset-bottom, 0));
+            overflow-x: hidden;
+            position: relative;
+            color: var(--text-primary);
+            transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Couche 1 : Gradient mesh animé */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -10%;
+            left: -10%;
+            width: 120%;
+            height: 120%;
+            background: 
+                radial-gradient(ellipse 800px 600px at 20% 30%, var(--teal-600) 0%, transparent 50%),
+                radial-gradient(ellipse 700px 700px at 80% 70%, var(--teal-500) 0%, transparent 50%),
+                radial-gradient(ellipse 600px 800px at 50% 50%, var(--teal-400) 0%, transparent 50%);
+            opacity: 0.12;
+            z-index: -3;
+            filter: blur(60px);
+            animation: meshMove 20s ease-in-out infinite;
+        }
+
+        [data-theme="light"] body::before {
+            opacity: 0.18;
+            filter: blur(70px);
+        }
+
+        @keyframes meshMove {
+            0%, 100% { 
+                transform: translate(0, 0) rotate(0deg) scale(1);
+            }
+            25% { 
+                transform: translate(5%, 3%) rotate(1deg) scale(1.05);
+            }
+            50% { 
+                transform: translate(-3%, 5%) rotate(-1deg) scale(0.95);
+            }
+            75% { 
+                transform: translate(4%, -2%) rotate(0.5deg) scale(1.02);
+            }
+        }
+
+        /* Couche 2 : Vagues fluides animées */
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(180deg, transparent 0%, var(--teal-700) 100%);
+            opacity: 0.03;
+            z-index: -2;
+            mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120'%3E%3Cpath d='M0,50 Q300,20 600,50 T1200,50 L1200,120 L0,120 Z' fill='white'/%3E%3C/svg%3E");
+            mask-size: 100% 100%;
+            mask-repeat: no-repeat;
+            animation: waveMove 15s ease-in-out infinite;
+        }
+
+        @keyframes waveMove {
+            0%, 100% { transform: translateX(0) translateY(0); }
+            50% { transform: translateX(-5%) translateY(-3%); }
+        }
+
+        /* Couche 3 : Particules lumineuses */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--accent-glow);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-glow);
+            opacity: 0;
+        }
+
+        .particle:nth-child(1) {
+            left: 10%;
+            animation: float1 12s ease-in-out infinite;
+        }
+
+        .particle:nth-child(2) {
+            left: 25%;
+            animation: float2 15s ease-in-out infinite 2s;
+        }
+
+        .particle:nth-child(3) {
+            left: 40%;
+            animation: float3 13s ease-in-out infinite 4s;
+        }
+
+        .particle:nth-child(4) {
+            left: 60%;
+            animation: float1 14s ease-in-out infinite 1s;
+        }
+
+        .particle:nth-child(5) {
+            left: 75%;
+            animation: float2 16s ease-in-out infinite 3s;
+        }
+
+        .particle:nth-child(6) {
+            left: 90%;
+            animation: float3 11s ease-in-out infinite 5s;
+        }
+
+        @keyframes float1 {
+            0% {
+                bottom: -10%;
+                opacity: 0;
+                transform: translateX(0) scale(1);
+            }
+            10% {
+                opacity: 0.6;
+            }
+            50% {
+                transform: translateX(30px) scale(1.2);
+            }
+            90% {
+                opacity: 0.6;
+            }
+            100% {
+                bottom: 110%;
+                opacity: 0;
+                transform: translateX(-30px) scale(0.8);
+            }
+        }
+
+        @keyframes float2 {
+            0% {
+                bottom: -10%;
+                opacity: 0;
+                transform: translateX(0) scale(1);
+            }
+            10% {
+                opacity: 0.5;
+            }
+            50% {
+                transform: translateX(-40px) scale(1.3);
+            }
+            90% {
+                opacity: 0.5;
+            }
+            100% {
+                bottom: 110%;
+                opacity: 0;
+                transform: translateX(20px) scale(0.7);
+            }
+        }
+
+        @keyframes float3 {
+            0% {
+                bottom: -10%;
+                opacity: 0;
+                transform: translateX(0) scale(1);
+            }
+            10% {
+                opacity: 0.7;
+            }
+            50% {
+                transform: translateX(20px) scale(1.1);
+            }
+            90% {
+                opacity: 0.7;
+            }
+            100% {
+                bottom: 110%;
+                opacity: 0;
+                transform: translateX(-40px) scale(0.9);
+            }
+        }
+
+        /* Aurore boréale subtile */
+        .aurora {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            pointer-events: none;
+            background: 
+                linear-gradient(90deg, 
+                    transparent 0%, 
+                    var(--teal-500) 20%, 
+                    var(--teal-400) 40%, 
+                    transparent 60%, 
+                    var(--teal-600) 80%, 
+                    transparent 100%
+                );
+            opacity: 0.08;
+            filter: blur(80px);
+            animation: auroraMove 25s ease-in-out infinite;
+        }
+
+        [data-theme="light"] .aurora {
+            opacity: 0.12;
+            filter: blur(100px);
+        }
+
+        @keyframes auroraMove {
+            0%, 100% {
+                transform: translateX(-10%) skewX(-5deg);
+            }
+            50% {
+                transform: translateX(10%) skewX(5deg);
+            }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 35px;
+            padding: 20px 0;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        h1::before {
+            content: '⚡ ';
+            color: var(--accent-primary);
+            filter: drop-shadow(0 0 10px var(--accent-primary));
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% {
+                filter: drop-shadow(0 0 10px var(--accent-primary));
+            }
+            50% {
+                filter: drop-shadow(0 0 20px var(--accent-light));
+            }
+        }
+
+        .theme-toggle {
+            background: var(--bg-card);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--border-color);
+            padding: 11px 22px;
+            border-radius: 14px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 
+                0 4px 20px rgba(0, 0, 0, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            touch-action: manipulation;
+            white-space: nowrap;
+        }
+
+        .theme-toggle:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-hover);
+            box-shadow: 
+                0 8px 30px var(--glow),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .theme-toggle:active {
+            transform: scale(0.95);
+        }
+
+        .params-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .param-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 22px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 
+                0 4px 16px rgba(0, 0, 0, 0.04),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .param-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: 
+                0 8px 32px var(--glow),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transform: translateY(-3px);
+        }
+
+        .param-card label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.3px;
+        }
+
+        input[type="time"],
+        input[type="number"] {
+            width: 100%;
+            padding: 13px 16px;
+            border: 1.5px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            background: var(--bg-input);
+            color: var(--text-primary);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+            backdrop-filter: blur(20px);
+            -webkit-appearance: none;
+            appearance: none;
+            text-align: center;
+        }
+
+        input[type="time"]:focus,
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 
+                0 0 0 4px var(--glow),
+                0 4px 12px var(--glow);
+        }
+
+        input[type="time"]::-webkit-datetime-edit {
+            padding: 0;
+            text-align: center;
+        }
+
+        input[type="time"]::-webkit-datetime-edit-fields-wrapper {
+            text-align: center;
+            justify-content: center;
+            display: flex;
+        }
+
+        /* Tableau moderne */
+        .table-container {
+            background: var(--bg-card);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 28px;
+            margin-bottom: 22px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.06),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+
+        .table-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+        }
+
+        /* VERSION CARTES POUR MOBILE */
+        .time-rows {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .time-card {
+            background: var(--bg-input);
+            backdrop-filter: blur(20px);
+            border: 1.5px solid var(--border-color);
+            border-radius: 12px;
+            padding: 14px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 
+                0 4px 16px rgba(0, 0, 0, 0.03),
+                inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        }
+
+        .time-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: 
+                0 8px 32px var(--glow),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .time-labels-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .time-input-label {
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            padding-left: 2px;
+            text-align: center;
+        }
+
+        .time-inputs-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .time-card input[type="time"] {
+            width: 100%;
+            min-width: 0;
+            padding: 11px 8px;
+            font-size: 15px;
+            background: var(--bg-secondary);
+            border: 1.5px solid var(--border-color);
+            border-radius: 9px;
+            color: var(--text-primary);
+            font-weight: 600;
+            transition: all 0.2s ease;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Mono', 'Courier New', monospace;
+        }
+
+        .time-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .duration-display {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--accent-primary);
+            font-family: 'SF Mono', 'Courier New', monospace;
+            text-shadow: 0 0 20px var(--glow);
+        }
+
+        .duration-display::before {
+            content: '⏱️';
+            font-size: 15px;
+        }
+
+        .delete-btn {
+            background: transparent;
+            border: 1.5px solid var(--error);
+            padding: 7px 14px;
+            border-radius: 10px;
+            color: var(--error);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 11px;
+            touch-action: manipulation;
+            white-space: nowrap;
+        }
+
+        .delete-btn:hover {
+            background: var(--error);
+            color: white;
+            transform: scale(1.08);
+            box-shadow: 0 4px 16px rgba(239, 83, 80, 0.3);
+        }
+
+        .delete-btn:active {
+            transform: scale(0.95);
+        }
+
+        .buttons {
+            display: flex;
+            gap: 14px;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 13px 26px;
+            border: none;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            touch-action: manipulation;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-clear {
+            background: transparent;
+            color: var(--error);
+            border: 2px solid var(--error);
+        }
+
+        .btn-clear:hover {
+            background: var(--error);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(239, 83, 80, 0.3);
+        }
+
+        .btn-save {
+            background: transparent;
+            color: var(--success);
+            border: 2px solid var(--success);
+        }
+
+        .btn-save:hover {
+            background: var(--success);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(38, 166, 154, 0.4);
+        }
+
+        .results-section {
+            background: var(--bg-card);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--border-color);
+            padding: 28px;
+            border-radius: 20px;
+            margin-bottom: 22px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.06),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .results-section h2 {
+            margin-bottom: 24px;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .results-section h2::before {
+            content: '';
+            width: 4px;
+            height: 22px;
+            background: linear-gradient(180deg, var(--accent-light), var(--accent-secondary));
+            border-radius: 2px;
+            box-shadow: 0 0 10px var(--accent-primary);
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
+        }
+
+        .result-card {
+            background: var(--bg-input);
+            backdrop-filter: blur(20px);
+            border: 1.5px solid var(--border-color);
+            padding: 20px;
+            border-radius: 16px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 
+                0 4px 16px rgba(0, 0, 0, 0.03),
+                inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        }
+
+        .result-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: 
+                0 8px 32px var(--glow),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            transform: translateY(-4px);
+        }
+
+        .result-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+        }
+
+        .result-value {
+            font-size: clamp(20px, 4vw, 24px);
+            font-weight: 700;
+            color: var(--text-primary);
+            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+        }
+
+        .result-description {
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+
+        .positive {
+            color: var(--success);
+        }
+
+        .negative {
+            color: var(--error);
+        }
+
+        .departure-card {
+            background: linear-gradient(135deg, rgba(38, 166, 154, 0.15), rgba(0, 137, 123, 0.12));
+            border-color: var(--accent-primary);
+        }
+
+        .departure-card .result-value {
+            color: var(--accent-primary);
+            font-size: clamp(22px, 5vw, 28px);
+            text-shadow: 0 0 30px var(--glow);
+        }
+
+        .highlight {
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.85; transform: scale(0.98); }
+        }
+
+        /* Message d'information */
+        .info-message {
+            background: var(--bg-input);
+            backdrop-filter: blur(20px);
+            border-left: 3px solid var(--accent-primary);
+            padding: 16px 22px;
+            border-radius: 12px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            line-height: 1.6;
+            box-shadow: -3px 0 0 var(--glow);
+        }
+
+        .info-message strong {
+            color: var(--accent-primary);
+        }
+
+        /* Animation du bouton + */
+        .btn-add-mini {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            font-size: 22px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 
+                0 4px 20px rgba(38, 166, 154, 0.3),
+                0 0 0 0 var(--accent-primary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+
+        .btn-add-mini:hover {
+            transform: scale(1.12) rotate(90deg);
+            box-shadow: 
+                0 8px 32px rgba(38, 166, 154, 0.5),
+                0 0 0 8px var(--glow);
+            background: var(--accent-light);
+        }
+
+        .btn-add-mini:active {
+            transform: scale(0.9) rotate(90deg);
+        }
+
+        .install-prompt {
+            position: fixed;
+            bottom: calc(20px + env(safe-area-inset-bottom, 0));
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(38, 166, 154, 0.4);
+            z-index: 1000;
+            animation: slideInUp 0.5s ease;
+            font-size: 14px;
+            touch-action: manipulation;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        @keyframes slideInUp {
+            from { transform: translate(-50%, 100px); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 0;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            .result-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .result-value {
+                font-size: 20px;
+            }
+
+            .departure-card .result-value {
+                font-size: 24px;
+            }
+
+            .btn {
+                padding: 11px 20px;
+                font-size: 13px;
+            }
+
+            .table-container {
+                padding: 12px;
+            }
+
+            .time-card {
+                padding: 12px;
+            }
+
+            .time-card input[type="time"] {
+                padding: 10px 6px;
+                font-size: 14px;
+            }
+        }
+
+        /* Scrollbar personnalisée */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 10px;
+            box-shadow: 0 0 10px var(--glow);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, var(--accent-light), var(--accent-primary));
+        }
+    </style>
+</head>
+<body>
+    <!-- Particules animées -->
+    <div class="particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <!-- Aurore boréale -->
+    <div class="aurora"></div>
+
+    <div class="container">
+        <header>
+            <h1>Time Tracker</h1>
+            <button class="theme-toggle" onclick="toggleTheme()">🌓 Thème</button>
+        </header>
+
+        <div class="params-section">
+            <div class="param-card">
+                <label for="tempsDu">⏱️ Temps dû</label>
+                <input type="number" id="tempsDu" step="0.01" value="8.26" onchange="calculate()" tabindex="100">
+            </div>
+            <div class="param-card">
+                <label for="pause">☕ Pause</label>
+                <input type="number" id="pause" step="0.01" value="0.34" onchange="calculate()" tabindex="101">
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header">
+                <span class="table-title">📋 Horaires</span>
+                <button class="btn-add-mini" onclick="addRow()" tabindex="102" title="Ajouter">+</button>
+            </div>
+            <div class="time-rows" id="timeRows"></div>
+        </div>
+
+        <div class="buttons">
+            <button class="btn btn-clear" onclick="clearAll()" tabindex="103">🗑️ Effacer</button>
+            <button class="btn btn-save" onclick="saveData()" tabindex="104">💾 Sauvegarder</button>
+        </div>
+
+        <div class="results-section">
+            <h2>Tableau de bord</h2>
+            <div class="result-grid">
+                <div class="result-card">
+                    <div class="result-label">Total travail</div>
+                    <div class="result-value" id="dureeTravail">0.00 h</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">Différence</div>
+                    <div class="result-value" id="difference">0.00 h</div>
+                    <div class="result-description">Travail + Pause - Dû</div>
+                </div>
+                <div class="result-card departure-card" id="departureCard1">
+                    <div class="result-label">🚪 Partir à</div>
+                    <div class="result-value highlight" id="partirHeures">--:--</div>
+                    <div class="result-description">Pour faire ses heures</div>
+                </div>
+                <div class="result-card departure-card" id="departureCard2">
+                    <div class="result-label">⏰ Limite 9h</div>
+                    <div class="result-value highlight" id="partir9h">--:--</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-message">
+            💡 <strong>Info :</strong> Les horaires de départ s'affichent uniquement quand vous avez une ligne avec une heure de début sans heure de fin.
+        </div>
+    </div>
+
+    <script>
+                // SERVICE WORKER
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .catch(e => console.log('SW:', e));
+            });
+        }
+
+
+        // MANIFEST
+        const manifest = {
+            name: "Time Tracker Pro",
+            short_name: "TimeTracker",
+            start_url: "./",
+            display: "standalone",
+            background_color: "#0A0E1A",
+            theme_color: "#26A69A",
+            orientation: "portrait",
+            icons: [{
+                src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%2326A69A'/%3E%3Cstop offset='100%25' style='stop-color:%2300796B'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='512' height='512' fill='url(%23g)' rx='100'/%3E%3Ctext x='256' y='380' font-size='320' text-anchor='middle' fill='white'%3E⚡%3C/text%3E%3C/svg%3E",
+                sizes: "512x512",
+                type: "image/svg+xml",
+                purpose: "any maskable"
+            }]
+        };
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], {type: 'application/json'}));
+        document.head.appendChild(link);
+
+        // PWA INSTALL
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', e => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const btn = document.createElement('button');
+            btn.className = 'install-prompt';
+            btn.textContent = '📲 Installer l\'app';
+            btn.onclick = async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    await deferredPrompt.userChoice;
+                    deferredPrompt = null;
+                    btn.remove();
+                }
+            };
+            document.body.appendChild(btn);
+            setTimeout(() => btn.remove(), 15000);
+        });
+
+        // APP LOGIC
+        let rowCount = 0;
+        let currentTabIndex = 1;
+
+        window.onload = function() {
+            loadTheme();
+            const savedData = localStorage.getItem('horaireData');
+            if (savedData) {
+                loadData();
+            } else {
+                for (let i = 0; i < 3; i++) addRow();
+            }
+            calculate();
+        };
+
+        function addRow() {
+            rowCount++;
+            const container = document.getElementById('timeRows');
+            const tabStart = currentTabIndex;
+            const tabEnd = currentTabIndex + 1;
+            currentTabIndex += 2;
+            
+            const card = document.createElement('div');
+            card.className = 'time-card';
+            card.id = `row${rowCount}`;
+            card.innerHTML = `
+                <div class="time-labels-row">
+                    <label class="time-input-label">Début</label>
+                    <label class="time-input-label">Fin</label>
+                </div>
+                <div class="time-inputs-row">
+                    <input type="time" id="debut${rowCount}" tabindex="${tabStart}" onchange="calculate()">
+                    <input type="time" id="fin${rowCount}" tabindex="${tabEnd}" onchange="calculate()">
+                </div>
+                <div class="time-info">
+                    <div class="duration-display" id="duree${rowCount}">0.00 h</div>
+                    <button class="delete-btn" onclick="deleteRow(${rowCount})" tabindex="-1">Supprimer</button>
+                </div>
+            `;
+            container.appendChild(card);
+        }
+
+        function deleteRow(id) {
+            document.getElementById(`row${id}`)?.remove();
+            calculate();
+            saveData();
+        }
+
+        function timeToDecimal(t) {
+            if (!t) return 0;
+            const [h, m] = t.split(':').map(Number);
+            return h + m / 60;
+        }
+
+        function decimalToTime(d) {
+            if (isNaN(d)) return '--:--';
+            while (d >= 24) d -= 24;
+            while (d < 0) d += 24;
+            const h = Math.floor(d);
+            const m = Math.round((d - h) * 60);
+            return m === 60 ? `${String((h+1)%24).padStart(2,'0')}:00` : `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+        }
+
+        function getActiveRow() {
+            const cards = document.querySelectorAll('.time-card');
+            for (let i = cards.length - 1; i >= 0; i--) {
+                const inputs = cards[i].querySelectorAll('input[type="time"]');
+                if (inputs.length >= 2 && inputs[0].value && !inputs[1].value) {
+                    return { hasActive: true, decimal: timeToDecimal(inputs[0].value) };
+                }
+            }
+            return { hasActive: false };
+        }
+
+        function calculate() {
+            let total = 0;
+            const cards = document.querySelectorAll('.time-card');
+            
+            cards.forEach(card => {
+                const inputs = card.querySelectorAll('input[type="time"]');
+                const display = card.querySelector('.duration-display');
+                
+                if (inputs.length >= 2 && display) {
+                    const d = inputs[0].value, f = inputs[1].value;
+                    if (d && f) {
+                        let dur = timeToDecimal(f) - timeToDecimal(d);
+                        if (dur < 0) dur += 24;
+                        display.textContent = dur.toFixed(2) + ' h';
+                        total += dur;
+                    } else {
+                        display.textContent = '0.00 h';
+                    }
+                }
+            });
+
+            document.getElementById('dureeTravail').textContent = total.toFixed(2) + ' h';
+            const du = parseFloat(document.getElementById('tempsDu').value) || 0;
+            const pause = parseFloat(document.getElementById('pause').value) || 0;
+            const diff = total + pause - du;
+            const diffEl = document.getElementById('difference');
+            diffEl.textContent = diff.toFixed(2) + ' h';
+            diffEl.className = 'result-value ' + (diff >= 0 ? 'positive' : 'negative');
+
+            const active = getActiveRow();
+            const c1 = document.getElementById('departureCard1');
+            const c2 = document.getElementById('departureCard2');
+            
+            if (active.hasActive) {
+                c1.style.opacity = '1';
+                c2.style.opacity = '1';
+                document.getElementById('partirHeures').textContent = decimalToTime(active.decimal + (du - total - pause));
+                document.getElementById('partir9h').textContent = decimalToTime(active.decimal + (9 - total));
+            } else {
+                document.getElementById('partirHeures').textContent = '--:--';
+                document.getElementById('partir9h').textContent = '--:--';
+                c1.style.opacity = '0.4';
+                c2.style.opacity = '0.4';
+            }
+            
+            saveData();
+        }
+
+        function clearAll() {
+            if (confirm('⚠️ Tout effacer ?')) {
+                document.getElementById('timeRows').innerHTML = '';
+                rowCount = 0;
+                currentTabIndex = 1;
+                for (let i = 0; i < 3; i++) addRow();
+                calculate();
+                localStorage.removeItem('horaireData');
+            }
+        }
+
+        function saveData() {
+            const data = { 
+                tempsDu: document.getElementById('tempsDu').value, 
+                pause: document.getElementById('pause').value, 
+                rows: [] 
+            };
+            const cards = document.querySelectorAll('.time-card');
+            cards.forEach(card => {
+                const inputs = card.querySelectorAll('input[type="time"]');
+                if (inputs.length >= 2) {
+                    data.rows.push({ debut: inputs[0].value, fin: inputs[1].value });
+                }
+            });
+            localStorage.setItem('horaireData', JSON.stringify(data));
+        }
+
+        function loadData() {
+            const data = JSON.parse(localStorage.getItem('horaireData'));
+            if (data) {
+                document.getElementById('tempsDu').value = data.tempsDu || 8.26;
+                document.getElementById('pause').value = data.pause || 0.34;
+                data.rows.forEach(r => {
+                    addRow();
+                    const container = document.getElementById('timeRows');
+                    const lastCard = container.lastElementChild;
+                    const inputs = lastCard.querySelectorAll('input[type="time"]');
+                    if (inputs.length >= 2) {
+                        inputs[0].value = r.debut;
+                        inputs[1].value = r.fin;
+                    }
+                });
+            }
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? '' : 'light';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            const metaTheme = document.querySelector('meta[name="theme-color"]');
+            if (metaTheme) {
+                metaTheme.content = newTheme === 'light' ? '#26A69A' : '#0A0E1A';
+            }
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || '';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        }
+    </script>
+</body>
+</html>
