@@ -234,7 +234,7 @@ for (const hidden of [false, true]) {
     await ctx.close();
   }
 }
-// 3e) Compteur d'heures
+// 3e) Compteur d'heures (calcul en centièmes d'heure, chaque créneau arrondi au plus proche)
 {
   const mk = async (time, data, vp={width:360,height:740}) => {
     const ctx = await b.newContext({ viewport: vp }); const p = await ctx.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
@@ -243,64 +243,84 @@ for (const hidden of [false, true]) {
     await p.goto(NEW); await p.clock.runFor(1500);
     return { ctx, p, errs, store: async()=>JSON.parse(await p.evaluate(()=>localStorage.getItem('horaireData'))) };
   };
-  const read = p => p.evaluate(()=>({ val: cntVal.textContent, cls: cntVal.className, chip: cntChip.textContent, proj: cntProjTxt.textContent, ticks: cntTicks.textContent, sw: document.documentElement.scrollWidth }));
-  const fab = [{debut:'06:27',fin:'09:11'},{debut:'09:30',fin:'12:13'},{debut:'12:44',fin:'15:20'}]; // 8 h 03 + 0.34 − 8.26 = +7,8 min → +8
+  const read = p => p.evaluate(()=>({ val: cntVal.textContent, hm: cntHm.textContent, cls: cntVal.className, chip: cntChip.textContent, proj: cntProjTxt.textContent, sw: document.documentElement.scrollWidth }));
+  const fix = async (p, txt, sign) => { await p.click('#cntFixBtn'); if (sign) await p.click(sign); await p.fill('#cntDec', txt); await p.click('#cntEditor .btn-ok'); await p.clock.runFor(1000); };
+  // 06:27-09:11 = 164 min = 2.7333 → 2.73 ; 09:30-12:13 = 163 min = 2.7167 → 2.72 ; 12:44-15:20 = 156 min = 2.60
+  const fab = [{debut:'06:27',fin:'09:11'},{debut:'09:30',fin:'12:13'},{debut:'12:44',fin:'15:20'}];
   const P = {tempsDu:'8.26',pause:'0.34'};
-  // affichage + projection (créneau ouvert à 12:44, il est 14:00 : 5.45 + 1.27 + .34 − 8.26 = −1.2 h = −72 min)
-  let t = await mk('2026-10-15T14:00:00', {...P, rows:[fab[0],fab[1],{debut:'12:44',fin:''}], date:'2026-10-15', compteur:{minutes:765, month:'2026-10'}});
+  // affichage : 12.75 ; projection à 14:00 avec 12:44 ouvert (76 min = 1.27) : 2.73 + 2.72 + 1.27 + 0.34 − 8.26 = −1.20 → 11.55
+  let t = await mk('2026-10-15T14:00:00', {...P, rows:[fab[0],fab[1],{debut:'12:44',fin:''}], date:'2026-10-15', compteur:{cent:1275, month:'2026-10'}});
   let m = await read(t.p);
-  ok(m.val==='+12:45' && m.cls.includes('c-norm') && m.chip==='dans la plage' && m.proj==='+11:33' && m.sw===360, 'compteur affichage '+JSON.stringify(m));
+  ok(m.val==='+12.75' && m.hm==='12 h 45' && m.cls.includes('c-norm') && m.chip==='dans la plage' && m.proj==='+11.55 (11 h 33)' && m.sw===360, 'compteur affichage '+JSON.stringify(m));
   console.log('   compteur :', JSON.stringify(m));
-  ok(!(await t.p.textContent('#counterCard')).includes('Ramené'), 'pas de mention du plafond');
   await t.p.locator('#counterCard').screenshot({ path:'counter-360.png' });
-  // correction manuelle
-  await t.p.click('#cntFixBtn'); await t.p.click('#cntMinus'); await t.p.fill('#cntH','2'); await t.p.fill('#cntM','15'); await t.p.click('#cntEditor .btn-ok'); await t.p.clock.runFor(1000);
-  let st = await t.store(); m = await read(t.p);
-  ok(st.compteur.minutes===-135 && m.val==='−2:15' && m.cls.includes('c-neg') && m.chip==='en négatif', 'correction négative '+JSON.stringify(m));
+  // correction décimale, exemple de l'entreprise : 29.83 = 29 h 50
+  await fix(t.p, '29.83', '#cntPlus'); let st = await t.store(); m = await read(t.p);
+  ok(st.compteur.cent===2983 && m.val==='+29.83' && m.hm==='29 h 50' && m.cls.includes('c-high') && m.chip==='au-dessus de 20 h', 'correction 29.83 '+JSON.stringify(m));
+  await t.p.locator('#counterCard').screenshot({ path:'counter-360-high.png' });
+  // négatif tapé avec un signe moins et une virgule
+  await fix(t.p, '-2,25'); st = await t.store(); m = await read(t.p);
+  ok(st.compteur.cent===-225 && m.val==='−2.25' && m.hm==='−2 h 15' && m.cls.includes('c-neg') && m.chip==='en négatif', 'correction −2,25 '+JSON.stringify(m));
   await t.p.locator('#counterCard').screenshot({ path:'counter-360-neg.png' });
   await t.p.reload(); await t.p.clock.runFor(1500); m = await read(t.p);
-  ok(m.val==='−2:15', 'correction conservée');
-  await t.p.click('#cntFixBtn'); await t.p.click('#cntPlus'); await t.p.fill('#cntH','23'); await t.p.fill('#cntM','15'); await t.p.click('#cntEditor .btn-ok'); await t.p.clock.runFor(1000);
-  m = await read(t.p); ok(m.val==='+23:15' && m.cls.includes('c-high') && m.chip==='au-dessus de 20:00', 'vert au-delà de 20 '+JSON.stringify(m));
-  await t.p.locator('#counterCard').screenshot({ path:'counter-360-high.png' });
-  await t.p.click('#cntFixBtn'); await t.p.fill('#cntH','20'); await t.p.fill('#cntM','0'); await t.p.click('#cntEditor .btn-ok'); await t.p.clock.runFor(1000);
-  m = await read(t.p); ok(m.val==='+20:00' && m.cls.includes('c-norm'), '20:00 pile = normal');
+  ok(m.val==='−2.25', 'correction conservée');
+  // bouton − puis valeur positive
+  await fix(t.p, '3.5', '#cntMinus'); st = await t.store(); ok(st.compteur.cent===-350, 'signe par bouton '+st.compteur.cent);
+  await fix(t.p, '20', '#cntPlus'); m = await read(t.p); ok(m.val==='+20.00' && m.cls.includes('c-norm'), '20.00 pile = normal');
+  // saisie invalide : refusée, message, rien d'enregistré
+  await t.p.click('#cntFixBtn'); await t.p.fill('#cntDec', '12.345'); await t.p.click('#cntEditor .btn-ok');
+  const inv = await t.p.evaluate(()=>({ open: !cntEditor.hidden, err: cntConv.classList.contains('err'), msg: cntConv.textContent }));
+  st = await t.store(); ok(inv.open && inv.err && st.compteur.cent===2000, 'saisie invalide refusée '+JSON.stringify(inv));
+  await t.p.fill('#cntDec', '29.83'); ok((await t.p.textContent('#cntConv'))==='= 29 h 50', 'conversion en direct');
   ok(!t.errs.length, 'erreurs compteur '+t.errs); await t.ctx.close();
-  // nouvelle journée : +8 min arrondies
-  t = await mk('2026-10-16T07:00:00', {...P, rows:fab, date:'2026-10-15', compteur:{minutes:765, month:'2026-10'}});
-  st = await t.store(); ok(st.compteur.minutes===773 && (await read(t.p)).val==='+12:53', 'ajout journée '+JSON.stringify(st.compteur));
+  // nouvelle journée : 2.73 + 2.72 + 2.60 + 0.34 − 8.26 = +0.13 → 12.88
+  t = await mk('2026-10-16T07:00:00', {...P, rows:fab, date:'2026-10-15', compteur:{cent:1275, month:'2026-10'}});
+  st = await t.store(); m = await read(t.p);
+  ok(st.compteur.cent===1288 && m.val==='+12.88' && m.hm==='12 h 53', 'ajout journée '+JSON.stringify(st.compteur));
   await t.p.click('#toastActions button'); st = await t.store();
-  ok(st.compteur.minutes===765 && st.rows[0].debut==='06:27', 'annuler retire l\'ajout '+JSON.stringify(st.compteur)); await t.ctx.close();
+  ok(st.compteur.cent===1275 && st.rows[0].debut==='06:27', 'annuler retire l\'ajout '+JSON.stringify(st.compteur)); await t.ctx.close();
+  // arrondi PAR CRÉNEAU (et non du total) : 07:02-12:13 = 5.1833 → 5.18 ; 12:44-15:46 = 3.0333 → 3.03
+  // Σ = 8.21 + 0.34 − 8.26 = +0.29 (l'arrondi du total exact 8.2167 → 8.22 aurait donné +0.30)
+  t = await mk('2026-10-16T07:00:00', {...P, rows:[{debut:'07:02',fin:'12:13'},{debut:'12:44',fin:'15:46'}], date:'2026-10-15', compteur:{cent:0, month:'2026-10'}});
+  st = await t.store(); ok(st.compteur.cent===29, 'arrondi par créneau '+st.compteur.cent); await t.ctx.close();
+  // créneau qui passe minuit : 22:00-01:30 = 3.50
+  t = await mk('2026-10-16T07:00:00', {...P, rows:[{debut:'22:00',fin:'01:30'}], date:'2026-10-15', compteur:{cent:0, month:'2026-10'}});
+  st = await t.store(); ok(st.compteur.cent===350+34-826, 'passage de minuit '+st.compteur.cent); await t.ctx.close();
   // journée vide : rien
-  t = await mk('2026-10-16T07:00:00', {...P, rows:[{debut:'',fin:''}], date:'2026-10-15', compteur:{minutes:765, month:'2026-10'}});
-  st = await t.store(); ok(st.compteur.minutes===765, 'journée vide n\'ajoute rien'); await t.ctx.close();
-  // 1er du mois : 31 ajouté PUIS plafond (1190 + 60 → 1250 → 1200)
-  const plus60 = [{debut:'07:00',fin:'16:12'}]; // 9.2 + .34 − 8.26 = 1.28 h = 77 min
-  t = await mk('2026-11-01T07:00:00', {...P, rows:plus60, date:'2026-10-31', compteur:{minutes:1190, month:'2026-10'}});
-  st = await t.store(); ok(st.compteur.minutes===1200 && st.compteur.month==='2026-11', 'plafond après ajout '+JSON.stringify(st.compteur));
-  await t.p.click('#toastActions button'); st = await t.store(); ok(st.compteur.minutes===1190 && st.compteur.month==='2026-10', 'annuler retire aussi le plafond '+JSON.stringify(st.compteur)); await t.ctx.close();
+  t = await mk('2026-10-16T07:00:00', {...P, rows:[{debut:'',fin:''}], date:'2026-10-15', compteur:{cent:1275, month:'2026-10'}});
+  st = await t.store(); ok(st.compteur.cent===1275, 'journée vide n\'ajoute rien'); await t.ctx.close();
+  // 1er du mois : 31 ajouté PUIS plafond. 07:00-16:12 = 9.20 + 0.34 − 8.26 = +1.28 ; 19.90 + 1.28 = 21.18 → 20.00
+  t = await mk('2026-11-01T07:00:00', {...P, rows:[{debut:'07:00',fin:'16:12'}], date:'2026-10-31', compteur:{cent:1990, month:'2026-10'}});
+  st = await t.store(); ok(st.compteur.cent===2000 && st.compteur.month==='2026-11', 'plafond après ajout '+JSON.stringify(st.compteur));
+  await t.p.click('#toastActions button'); st = await t.store(); ok(st.compteur.cent===1990 && st.compteur.month==='2026-10', 'annuler retire aussi le plafond '+JSON.stringify(st.compteur)); await t.ctx.close();
   // ouverture tardive (le 3) sans créneau : plafond quand même
-  t = await mk('2026-11-03T07:00:00', {...P, rows:[{debut:'',fin:''}], date:'2026-10-30', compteur:{minutes:1395, month:'2026-10'}});
-  st = await t.store(); ok(st.compteur.minutes===1200, 'plafond ouverture tardive '+JSON.stringify(st.compteur)); await t.ctx.close();
-  // sous 20:00 : inchangé ; négatif : inchangé
-  for (const v of [1100, -300]) {
-    t = await mk('2026-11-02T07:00:00', {...P, rows:[{debut:'',fin:''}], date:'2026-10-30', compteur:{minutes:v, month:'2026-10'}});
-    st = await t.store(); ok(st.compteur.minutes===v && st.compteur.month==='2026-11', 'pas de plafond '+v); await t.ctx.close();
+  t = await mk('2026-11-03T07:00:00', {...P, rows:[{debut:'',fin:''}], date:'2026-10-30', compteur:{cent:2325, month:'2026-10'}});
+  st = await t.store(); ok(st.compteur.cent===2000, 'plafond ouverture tardive '+JSON.stringify(st.compteur)); await t.ctx.close();
+  // sous 20.00 : inchangé ; négatif : inchangé
+  for (const v of [1833, -500]) {
+    t = await mk('2026-11-02T07:00:00', {...P, rows:[{debut:'',fin:''}], date:'2026-10-30', compteur:{cent:v, month:'2026-10'}});
+    st = await t.store(); ok(st.compteur.cent===v && st.compteur.month==='2026-11', 'pas de plafond '+v); await t.ctx.close();
   }
   // même mois : pas de plafond même au-dessus
-  t = await mk('2026-10-16T07:00:00', {...P, rows:[{debut:'',fin:''}], date:'2026-10-15', compteur:{minutes:1500, month:'2026-10'}});
-  st = await t.store(); ok(st.compteur.minutes===1500, 'pas de plafond en cours de mois'); await t.ctx.close();
+  t = await mk('2026-10-16T07:00:00', {...P, rows:[{debut:'',fin:''}], date:'2026-10-15', compteur:{cent:2500, month:'2026-10'}});
+  st = await t.store(); ok(st.compteur.cent===2500, 'pas de plafond en cours de mois'); await t.ctx.close();
+  // migration de l'ancien format en minutes : 765 min → 12.75 ; 1790 min → 29.83
+  for (const [mins, cent, txt] of [[765, 1275, '+12.75'], [1790, 2983, '+29.83'], [-135, -225, '−2.25']]) {
+    t = await mk('2026-10-15T09:00:00', {...P, rows:fab, date:'2026-10-15', compteur:{minutes:mins, month:'2026-10'}});
+    m = await read(t.p); st = await t.store();
+    ok(m.val===txt && st.compteur.cent===cent && st.compteur.minutes===undefined, `migration ${mins} min → ${JSON.stringify(st.compteur)} ${m.val}`); await t.ctx.close();
+  }
   // anciennes données sans compteur
   t = await mk('2026-10-15T09:00:00', {...P, rows:fab});
-  m = await read(t.p); st = await t.store(); ok(m.val==='0:00' && st.compteur.minutes===0 && !t.errs.length, 'données sans compteur '+JSON.stringify(m)); await t.ctx.close();
+  m = await read(t.p); st = await t.store(); ok(m.val==='0.00' && st.compteur.cent===0 && !t.errs.length, 'données sans compteur '+JSON.stringify(m)); await t.ctx.close();
   // grand écran : pas de débordement
-  t = await mk('2026-10-15T14:00:00', {...P, rows:fab, date:'2026-10-15', compteur:{minutes:765, month:'2026-10'}}, {width:1280,height:800});
+  t = await mk('2026-10-15T14:00:00', {...P, rows:fab, date:'2026-10-15', compteur:{cent:1275, month:'2026-10'}}, {width:1280,height:800});
   ok((await read(t.p)).sw===1280, 'compteur 1280'); await t.ctx.close();
   // ancienne version lit le nouveau format
   {
     const ctx = await b.newContext(); const p = await ctx.newPage();
     await p.clock.install({ time: new Date('2026-10-15T13:26:00') });
-    await p.addInitScript(d=>localStorage.setItem('horaireData', JSON.stringify(d)), {...P, rows:[fab[0],fab[1],{debut:'12:44',fin:''}], date:'2026-10-15', compteur:{minutes:765,month:'2026-10'}});
+    await p.addInitScript(d=>localStorage.setItem('horaireData', JSON.stringify(d)), {...P, rows:[fab[0],fab[1],{debut:'12:44',fin:''}], date:'2026-10-15', compteur:{cent:1275,month:'2026-10'}});
     await p.goto(OLD); await p.waitForTimeout(300);
     ok((await p.textContent('#partirHeures'))==='15:12', 'ancienne version + compteur'); await ctx.close();
   }

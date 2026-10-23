@@ -3,7 +3,7 @@ import { chromium } from 'playwright';
 const NEW = process.env.BASE_URL || 'http://localhost:8811/';
 const OLD = process.env.LEGACY_URL || 'http://localhost:8812/';
 const CACHE = process.env.CACHE_NAME || 'time-tracker-v4';
-const base = { tempsDu:'8.26', pause:'0.34', date:'2026-10-12', compteur:{minutes:765,month:'2026-10'}, rows:[{debut:'06:27',fin:'09:11'},{debut:'09:30',fin:'12:13'},{debut:'12:44',fin:''}],
+const base = { tempsDu:'8.26', pause:'0.34', date:'2026-10-12', compteur:{cent:1275,month:'2026-10'}, rows:[{debut:'06:27',fin:'09:11'},{debut:'09:30',fin:'12:13'},{debut:'12:44',fin:''}],
   veille:{date:'2026-10-11',tempsDu:'8.26',pause:'0.34',rows:[{debut:'07:00',fin:'12:00'},{debut:'12:30',fin:'16:10'}]} };
 const b = await chromium.launch(); let fail=0; const ok=(c,m)=>{ if(!c){fail++; console.log('FAIL',m);} };
 for (const [w,h] of [[1024,768],[1280,800],[1440,900],[1920,1080],[900,800]]) for (const t of ['14:05','16:20']) for (const th of ['','light']) {

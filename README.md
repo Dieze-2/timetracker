@@ -16,7 +16,7 @@ Un seul fichier `index.html` (HTML, CSS et JavaScript sans framework ni étape d
 
 **D'un jour à l'autre**
 - À la première ouverture d'un nouveau jour, les créneaux de la veille passent dans un bloc **Hier** en lecture seule et la journée repart à zéro (annulable 10 s). Rien n'est vidé tant qu'un créneau est ouvert.
-- **Compteur d'heures** (« Solde d'hier ») : chaque journée close ajoute sa différence, arrondie à la minute ; une journée sans créneau n'ajoute rien. Au premier passage dans un nouveau mois, le compteur est ramené à 20:00 s'il dépasse (le surplus n'est pas affiché). Correction manuelle possible. Rouge sous 0:00, normal jusqu'à 20:00 inclus, vert au-delà.
+- **Compteur d'heures** (« Solde d'hier ») : calculé en heures décimales comme le système de l'entreprise, affiché en décimal (`+29.83`) avec sa conversion (`29 h 50`). Chaque journée close ajoute son écart ; une journée sans créneau n'ajoute rien. Au premier passage dans un nouveau mois, le compteur est ramené à 20.00 s'il dépasse (le surplus n'est pas affiché). Correction manuelle en décimal. Rouge sous 0, normal jusqu'à 20.00 inclus, vert au-delà.
 
 **Paramètres** : temps dû et pause, en heures décimales (8.26 = 8 h 16).
 
@@ -30,7 +30,7 @@ Un seul fichier `index.html` (HTML, CSS et JavaScript sans framework ni étape d
 | Différence | total + pause − temps dû |
 | Partir à | début du créneau ouvert + (temps dû − total − pause) |
 | Limite 9 h | début du créneau ouvert + (9 − total) |
-| Ajout au compteur | différence de la journée close × 60, arrondie à la minute |
+| Ajout au compteur | Σ (durée de chaque créneau fermé en heures décimales, **arrondie au centième le plus proche**) + pause − temps dû. Ex. 07:02 → 12:13 = 5 h 11 = 5.1833 → 5.18. Tenu en centièmes entiers ; conversion en h min à la minute la plus proche (29.83 → 29 h 50) |
 
 ## Données et confidentialité
 
