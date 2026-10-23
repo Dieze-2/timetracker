@@ -14,7 +14,7 @@ const pay = '<img src=x onerror="window.__pwn=1">';
     tempsDu: '8.26"><img src=x onerror="window.__pwn=2">', pause: '0.34',
     rows:[{debut:pay, fin:'12:00'},{debut:'07:00', fin:pay},null,'x'],
     date:'2026-10-16', veille:{date:pay, tempsDu:'8.26', pause:'0.34', rows:[{debut:pay,fin:pay}]},
-    compteur:{minutes:765, month:pay} })), [pay]);
+    compteur:{cent:1275, month:pay} })), [pay]);
   await p.goto(URL_); await p.waitForTimeout(800);
   const r = await p.evaluate(()=>({ pwn: window.__pwn, imgs: document.querySelectorAll('img[src="x"]').length, rows: JSON.parse(localStorage.getItem('horaireData')).rows, veille: JSON.parse(localStorage.getItem('horaireData')).veille, month: JSON.parse(localStorage.getItem('horaireData')).compteur.month, du: document.getElementById('tempsDu').value }));
   ok(r.pwn===undefined && r.imgs===0, 'aucune exécution ni balise injectée '+JSON.stringify({pwn:r.pwn,imgs:r.imgs}));

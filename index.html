@@ -588,8 +588,11 @@
         }
         .btn-fix svg { width: 16px; height: 16px; }
         .counter-editor { display: grid; gap: 10px; padding: 14px; border-radius: 18px; border: 1px solid var(--line); background: var(--surface-hi); }
-        .counter-editor p { font-size: var(--t-sm); color: var(--muted); }
-        .ed-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; align-items: center; }
+        .ed-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; }
+        .counter-editor label { font-size: var(--t-sm); color: var(--muted); }
+        .ed-conv { font-size: var(--t-sm); color: var(--muted); min-height: 1.2em; font-variant-numeric: tabular-nums; }
+        .ed-conv.err { color: var(--neg); }
+        .counter-hm { font-size: var(--t-base); color: var(--muted); font-variant-numeric: tabular-nums; margin-top: -4px; }
         .sign { display: grid; grid-template-columns: 1fr 1fr; border-radius: 12px; border: 1.5px solid var(--line); overflow: hidden; }
         .sign button { min-height: 44px; min-width: 44px; border: 0; background: transparent; font-family: var(--f-display); font-weight: 700; font-size: var(--t-lg); }
         .sign button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
@@ -1010,7 +1013,8 @@
                         <span class="tile-label">Solde d'hier</span>
                         <span class="sign-chip" id="cntChip"></span>
                     </div>
-                    <div class="counter-val" id="cntVal">0:00</div>
+                    <div class="counter-val" id="cntVal">0.00</div>
+                    <div class="counter-hm" id="cntHm">0 h 00</div>
                     <div class="gauge" aria-hidden="true">
                         <div class="g-track"><div class="g-zone z-neg"></div><div class="g-zone z-norm"></div><div class="g-zone z-high"></div></div>
                         <div class="g-fill" id="cntFill"></div>
@@ -1025,16 +1029,15 @@
                         </button>
                     </div>
                     <form class="counter-editor" id="cntEditor" hidden onsubmit="saveCounterEditor(event)">
-                        <p>Solde d'hier, tel qu'affiché par l'entreprise :</p>
+                        <label for="cntDec">Solde d'hier en heures décimales, tel qu'affiché par l'entreprise :</label>
                         <div class="ed-row">
                             <div class="sign" role="group" aria-label="Signe">
                                 <button type="button" id="cntPlus" aria-pressed="true" aria-label="Positif" onclick="setEditorSign(1)">+</button>
                                 <button type="button" id="cntMinus" aria-pressed="false" aria-label="Négatif" onclick="setEditorSign(-1)">−</button>
                             </div>
-                            <input class="inp" type="number" id="cntH" inputmode="numeric" min="0" max="999" aria-label="Heures">
-                            <span class="colon" aria-hidden="true">:</span>
-                            <input class="inp" type="number" id="cntM" inputmode="numeric" min="0" max="59" aria-label="Minutes">
+                            <input class="inp" type="text" id="cntDec" inputmode="decimal" autocomplete="off" placeholder="29.83" aria-describedby="cntConv">
                         </div>
+                        <div class="ed-conv" id="cntConv" aria-live="polite"></div>
                         <div class="ed-actions">
                             <button type="button" class="btn btn-ghost-sm press" onclick="closeCounterEditor()">Annuler</button>
                             <button type="submit" class="btn btn-ok press">Enregistrer</button>
@@ -1140,9 +1143,10 @@
         let lastDay = null;
         // Journée précédente, en lecture seule : { date, tempsDu, pause, rows }.
         let veille = null;
-        // Compteur d'heures de l'entreprise : solde d'hier en minutes, et mois
-        // (AAAA-MM) du dernier contrôle du plafond mensuel.
-        let compteur = { minutes: 0, month: monthKey() };
+        // Compteur d'heures de l'entreprise : solde d'hier en CENTIÈMES d'heure
+        // (entier : 2983 = 29.83 h), et mois (AAAA-MM) du dernier contrôle du
+        // plafond mensuel.
+        let compteur = { cent: 0, month: monthKey() };
 
         const $ = id => document.getElementById(id);
         const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1644,6 +1648,8 @@
             window.addEventListener('pageshow', () => check(true));
         }
 
+        $('cntDec').addEventListener('input', updateEditorConv);
+
         // Saisie dans les créneaux : on met à jour l'état sans reconstruire les champs.
         $('timeRows').addEventListener('change', e => {
             const t = e.target;
@@ -1738,7 +1744,7 @@
 
             // 1. La journée close s'ajoute au compteur (rien si aucun créneau),
             // 2. puis le plafond mensuel : dans cet ordre, le 31 compte dans son mois.
-            if (worked) compteur.minutes += dayDeltaMinutes(rows, $('tempsDu').value, $('pause').value);
+            if (worked) compteur.cent += dayDeltaCent(rows, $('tempsDu').value, $('pause').value);
             const capped = applyMonthlyCap();
             if (!worked) return capped;
 
@@ -1757,77 +1763,97 @@
         }
 
         /*
-         * Compteur d'heures. Chaque journée close ajoute sa différence (travail des
-         * créneaux fermés + pause − temps dû), ARRONDIE À LA MINUTE comme une
-         * badgeuse. Le 1er du mois (ou à la première ouverture du mois), si et
-         * seulement si le compteur dépasse COUNTER_CAP_MIN, il est ramené à cette
-         * valeur ; le surplus part dans un autre pot que l'app n'affiche pas.
+         * Compteur d'heures, calculé EN DÉCIMAL comme le système de l'entreprise,
+         * puis converti en heures et minutes pour l'affichage :
+         *   - chaque créneau fermé est converti en heures décimales et ARRONDI AU
+         *     CENTIÈME LE PLUS PROCHE (07:02 → 12:13 = 5 h 11 = 5.1833 → 5.18) ;
+         *   - écart du jour = Σ créneaux arrondis + pause − temps dû ;
+         *   - tout est tenu en centièmes entiers : aucune dérive de virgule.
+         * Une journée sans créneau n'ajoute rien. Au premier passage dans un
+         * nouveau mois, si et seulement si le compteur dépasse COUNTER_CAP (20.00),
+         * il y est ramené ; le surplus part dans un autre pot non affiché ici.
          */
-        const COUNTER_CAP_MIN = 20 * 60;
+        const COUNTER_CAP = 2000; // 20.00 h, en centièmes
 
         function monthKey(d = new Date()) {
             return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         }
 
-        function dayDeltaMinutes(list, tempsDu, pause) {
+        const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+        // Durée d'un créneau en centièmes d'heure, arrondie au plus proche.
+        // minutes × 100 / 60 = minutes × 5 / 3 : jamais pile à ,5 → pas d'ambiguïté.
+        function creneauCent(debut, fin) {
+            let m = toMin(fin) - toMin(debut);
+            if (m < 0) m += 24 * 60;
+            return Math.round(m * 5 / 3);
+        }
+        const paramCent = v => Math.round((parseFloat(v) || 0) * 100);
+
+        function dayDeltaCent(list, tempsDu, pause) {
             let total = 0;
-            list.forEach(r => {
-                if (r.debut && r.fin) {
-                    let dur = timeToDecimal(r.fin) - timeToDecimal(r.debut);
-                    if (dur < 0) dur += 24;
-                    total += dur;
-                }
-            });
-            const diff = total + (parseFloat(pause) || 0) - (parseFloat(tempsDu) || 0);
-            return Math.round(diff * 60);
+            list.forEach(r => { if (r.debut && r.fin) total += creneauCent(r.debut, r.fin); });
+            return total + paramCent(pause) - paramCent(tempsDu);
         }
 
         function applyMonthlyCap() {
             const m = monthKey();
             if (compteur.month === m) return false;
             compteur.month = m;
-            if (compteur.minutes > COUNTER_CAP_MIN) compteur.minutes = COUNTER_CAP_MIN;
+            if (compteur.cent > COUNTER_CAP) compteur.cent = COUNTER_CAP;
             return true;
         }
 
-        // « +12:45 », « −2:15 », « 0:00 » : le format du compteur de l'entreprise.
-        function fmtCounter(min) {
-            const a = Math.abs(Math.round(min));
-            const s = `${Math.floor(a / 60)}:${String(a % 60).padStart(2, '0')}`;
-            return min < 0 ? '−' + s : min > 0 ? '+' + s : s;
+        // « +29.83 », « −2.25 », « 0.00 » : le format du compteur de l'entreprise.
+        function fmtDec(c, signed = true) {
+            const n = Math.round(c);
+            const s = (Math.abs(n) / 100).toFixed(2);
+            return n < 0 ? '−' + s : (signed && n > 0 ? '+' + s : s);
+        }
+        // Conversion en heures et minutes : 29.83 → « 29 h 50 » (minute la plus proche).
+        function fmtHm(c) {
+            const n = Math.round(c);
+            const mins = Math.round(Math.abs(n) * 0.6);
+            return (n < 0 ? '−' : '') + `${Math.floor(mins / 60)} h ${String(mins % 60).padStart(2, '0')}`;
         }
 
-        const counterZone = min => min < 0 ? 'neg' : min > COUNTER_CAP_MIN ? 'high' : 'norm';
-        const COUNTER_STATUS = { neg: 'en négatif', norm: 'dans la plage', high: 'au-dessus de 20:00' };
+        const counterZone = c => c < 0 ? 'neg' : c > COUNTER_CAP ? 'high' : 'norm';
+        const COUNTER_STATUS = { neg: 'en négatif', norm: 'dans la plage', high: 'au-dessus de 20 h' };
+
+        // La journée en cours telle qu'elle serait ajoutée maintenant : créneaux
+        // fermés arrondis + créneau ouvert compté jusqu'à l'heure actuelle (arrondi
+        // lui aussi), + pause − dû ; 0 sans créneau.
+        function todayDeltaCent(r) {
+            if (!r.any) return 0;
+            let total = 0;
+            rows.forEach(x => { if (x.debut && x.fin) total += creneauCent(x.debut, x.fin); });
+            if (r.active.hasActive) total += Math.round(Math.round(r.elapsed * 60) * 5 / 3);
+            return total + paramCent(r.pause) - paramCent(r.du);
+        }
 
         function renderCounter(r) {
-            const solde = compteur.minutes;
-            // Projection : la journée en cours telle qu'elle serait ajoutée maintenant
-            // (créneau ouvert compté jusqu'à l'heure actuelle) ; 0 sans créneau.
-            const todayDelta = !r.any ? 0
-                : r.active.hasActive ? Math.round(-r.toGo * 60)
-                : Math.round(r.diff * 60);
-            const proj = solde + todayDelta;
+            const solde = compteur.cent;
+            const proj = solde + todayDeltaCent(r);
             const z = counterZone(solde);
 
             const val = $('cntVal');
-            countTo(val, solde, v => fmtCounter(v));
+            countTo(val, solde, v => fmtDec(v));
             val.className = 'counter-val c-' + z;
+            $('cntHm').textContent = fmtHm(solde);
             const chip = $('cntChip');
             chip.textContent = COUNTER_STATUS[z];
             chip.className = 'sign-chip c-' + z;
             const p = $('cntProjTxt');
-            p.textContent = fmtCounter(proj);
+            p.textContent = `${fmtDec(proj)} (${fmtHm(proj)})`;
             p.className = 'c-' + counterZone(proj);
 
-            // Jauge : −10:00 → +30:00, élargie par pas de 5 h si nécessaire.
-            const lo = Math.min(-600, Math.floor(Math.min(solde, proj) / 300) * 300);
-            const hi = Math.max(1800, Math.ceil(Math.max(solde, proj) / 300) * 300);
-            const x = m => ((m - lo) / (hi - lo)) * 100;
+            // Jauge : −10 → +30 h, élargie par pas de 5 h si nécessaire.
+            const lo = Math.min(-1000, Math.floor(Math.min(solde, proj) / 500) * 500);
+            const hi = Math.max(3000, Math.ceil(Math.max(solde, proj) / 500) * 500);
+            const x = c => ((c - lo) / (hi - lo)) * 100;
             const zones = document.querySelectorAll('#counterCard .g-zone');
             zones[0].style.width = x(0) + '%';
-            zones[1].style.width = (x(COUNTER_CAP_MIN) - x(0)) + '%';
-            zones[2].style.width = (100 - x(COUNTER_CAP_MIN)) + '%';
+            zones[1].style.width = (x(COUNTER_CAP) - x(0)) + '%';
+            zones[2].style.width = (100 - x(COUNTER_CAP)) + '%';
             const fill = $('cntFill');
             const a = Math.min(0, solde), b = Math.max(0, solde);
             fill.style.left = x(a) + '%';
@@ -1835,27 +1861,48 @@
             fill.style.background = z === 'neg' ? 'var(--neg)' : z === 'high' ? 'var(--pos)' : 'color-mix(in srgb, var(--fg) 45%, transparent)';
             $('cntMark').style.left = x(solde) + '%';
             $('cntProj').style.left = x(proj) + '%';
-            $('cntTicks').innerHTML = [lo, 0, COUNTER_CAP_MIN, hi]
-                .map(v => `<span style="left:${x(v)}%">${fmtCounter(v).replace('+', '')}</span>`).join('');
+            $('cntTicks').innerHTML = [lo, 0, COUNTER_CAP, hi]
+                .map(v => `<span style="left:${x(v)}%">${(v < 0 ? '−' : '') + Math.abs(v / 100)} h</span>`).join('');
             $('counterCard').setAttribute('aria-label',
-                `Solde d'hier ${fmtCounter(solde)}, ${COUNTER_STATUS[z]} ; avec aujourd'hui ${fmtCounter(proj)}`);
+                `Solde d'hier ${fmtDec(solde)} heures, soit ${fmtHm(solde)}, ${COUNTER_STATUS[z]} ; avec aujourd'hui ${fmtDec(proj)}`);
         }
 
-        // Correction manuelle : remplace le solde d'hier.
+        // Correction manuelle, en heures décimales : remplace le solde d'hier.
         let editorSign = 1;
+        const DEC_RE = /^\d{1,4}([.,]\d{1,2})?$/;
         function setEditorSign(s) {
             editorSign = s;
             $('cntPlus').setAttribute('aria-pressed', String(s > 0));
             $('cntMinus').setAttribute('aria-pressed', String(s < 0));
+            updateEditorConv();
+        }
+        // Lit le champ : « 29.83 », « 29,83 », « -2.25 » (le signe tapé prime) ; null si invalide.
+        function readEditorCent() {
+            let v = $('cntDec').value.trim().replace(/\s/g, '');
+            if (/^[-−]/.test(v)) { setEditorSignSilently(-1); v = v.slice(1); }
+            if (!DEC_RE.test(v)) return null;
+            return editorSign * Math.round(parseFloat(v.replace(',', '.')) * 100);
+        }
+        function setEditorSignSilently(s) {
+            editorSign = s;
+            $('cntPlus').setAttribute('aria-pressed', String(s > 0));
+            $('cntMinus').setAttribute('aria-pressed', String(s < 0));
+        }
+        function updateEditorConv() {
+            const conv = $('cntConv');
+            if (!$('cntDec').value.trim()) { conv.textContent = ''; conv.classList.remove('err'); return; }
+            const c = readEditorCent();
+            conv.classList.toggle('err', c === null);
+            conv.textContent = c === null ? 'Format attendu : 29.83 (deux décimales au plus)' : `= ${fmtHm(c)}`;
         }
         function openCounterEditor() {
-            const a = Math.abs(compteur.minutes);
-            setEditorSign(compteur.minutes < 0 ? -1 : 1);
-            $('cntH').value = Math.floor(a / 60);
-            $('cntM').value = String(a % 60).padStart(2, '0');
+            setEditorSign(compteur.cent < 0 ? -1 : 1);
+            $('cntDec').value = (Math.abs(compteur.cent) / 100).toFixed(2);
+            updateEditorConv();
             $('cntEditor').hidden = false;
             $('cntFixBtn').hidden = true;
-            $('cntH').focus();
+            $('cntDec').focus();
+            $('cntDec').select();
         }
         function closeCounterEditor() {
             $('cntEditor').hidden = true;
@@ -1863,9 +1910,9 @@
         }
         function saveCounterEditor(e) {
             e.preventDefault();
-            const h = Math.max(0, parseInt($('cntH').value, 10) || 0);
-            const m = Math.min(59, Math.max(0, parseInt($('cntM').value, 10) || 0));
-            compteur.minutes = editorSign * (h * 60 + m);
+            const c = readEditorCent();
+            if (c === null) { updateEditorConv(); $('cntDec').focus(); return; }
+            compteur.cent = c;
             compteur.month = monthKey();
             closeCounterEditor();
             buzz(8);
@@ -1943,10 +1990,14 @@
             veille = v && typeof v === 'object' && typeof v.date === 'string' && DAY_RE.test(v.date)
                 ? { date: v.date, tempsDu: cleanNum(v.tempsDu, 8.26), pause: cleanNum(v.pause, 0.34), rows: cleanRows(v.rows) }
                 : null;
-            if (data.compteur && Number.isFinite(data.compteur.minutes)) {
-                const minutes = Math.max(-99999, Math.min(99999, Math.round(data.compteur.minutes)));
-                const month = typeof data.compteur.month === 'string' && MONTH_RE.test(data.compteur.month) ? data.compteur.month : monthKey();
-                compteur = { minutes, month };
+            const k = data.compteur;
+            if (k && (Number.isFinite(k.cent) || Number.isFinite(k.minutes))) {
+                // Format courant : centièmes ; ancien format (avant le passage au
+                // décimal) : minutes, converties au centième le plus proche.
+                const raw = Number.isFinite(k.cent) ? k.cent : k.minutes * 100 / 60;
+                const cent = Math.max(-999999, Math.min(999999, Math.round(raw)));
+                const month = typeof k.month === 'string' && MONTH_RE.test(k.month) ? k.month : monthKey();
+                compteur = { cent, month };
             }
             renderRows();
         }
