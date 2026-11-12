@@ -85,6 +85,8 @@ npm test                          # toutes les suites (environ 5 min)
 npm test -- mobile                # une seule suite
 ```
 
+Si un Chromium est déjà installé dans une autre version que celle attendue par Playwright, le désigner plutôt que d'en télécharger un : `CHROMIUM_PATH=/chemin/vers/chrome npm test`.
+
 | Suite | Ce qu'elle vérifie |
 |---|---|
 | `mobile` | calculs identiques à la version d'origine (`tests/legacy/`), pointage, correction, effacement, nouvelle journée, compteur et plafond mensuel, chevauchement, horloge (minute et secondes), mise en page à 360-390 px sans débordement, thème, installabilité, animations réduites |

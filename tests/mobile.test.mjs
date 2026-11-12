@@ -1,4 +1,4 @@
-import { chromium } from 'playwright';
+import { chromium } from './browser.mjs';
 // Adresses servies par tests/run.mjs (app courante et version d'origine figée).
 const NEW = process.env.BASE_URL || 'http://localhost:8811/';
 const OLD = process.env.LEGACY_URL || 'http://localhost:8812/';
@@ -170,9 +170,9 @@ for (const hidden of [false, true]) {
   let t = await mk('2026-10-13T07:10:00', {tempsDu:'8.26',pause:'0.34',rows:fab,date:'2026-10-12'});
   let st = await t.store();
   ok(st.rows.every(r=>!r.debut&&!r.fin) && st.date==='2026-10-13' && st.veille?.date==='2026-10-12' && st.veille.rows.length===3, 'nouvelle journée '+JSON.stringify(st));
-  const v = await t.p.evaluate(()=>({ shown: !document.querySelector('[data-block=veille]').hidden, title: prevTitle.textContent, total: prevTotal.textContent, diff: prevDiff.textContent, n: prevList.children.length, toast: !!document.querySelector('#toast.on'), msg: toastTxt.textContent }));
+  const v = await t.p.evaluate(()=>({ shown: !document.querySelector('[data-block=veille]').hidden, title: prevTitle.textContent, total: prevTotal.textContent, diff: prevDiff.textContent, n: prevList.children.length, lines: [...prevList.querySelectorAll('span')].map(e=>e.textContent).join('|'), toast: !!document.querySelector('#toast.on'), msg: toastTxt.textContent }));
   await t.p.waitForTimeout(800); await t.p.screenshot({ path:'newday-toast-360.png' });
-  ok(v.shown && v.title==='Hier' && v.total==='8 h 03' && v.diff==='+0 h 08' && v.n===3 && v.toast, 'bloc Hier '+JSON.stringify(v));
+  ok(v.shown && v.title==='Hier' && v.total==='8.05 h' && v.diff==='+0.13 h' && v.lines==='2.73 h|2.72 h|2.60 h' && v.n===3 && v.toast, 'bloc Hier '+JSON.stringify(v));
   console.log('   lendemain :', JSON.stringify(v));
   await t.p.screenshot({ path:'newday-360.png', fullPage:true });
   await t.p.click('#toastActions button');
@@ -225,6 +225,8 @@ for (const hidden of [false, true]) {
     await p.goto(NEW); await p.waitForTimeout(2500); await p.reload(); await p.waitForTimeout(1500);
     const cdp = await ctx.newCDPSession(p);
     const ie = await cdp.send('Page.getInstallabilityErrors');
+    // « in-incognito » décrit le profil de test du navigateur (Chromium récent), pas l'app : ignoré.
+    ie.installabilityErrors = ie.installabilityErrors.filter(e => e.errorId !== 'in-incognito');
     const man = await cdp.send('Page.getAppManifest');
     ok(ie.installabilityErrors.length===0, 'installable '+JSON.stringify(ie.installabilityErrors));
     ok(!man.errors?.length, 'manifest sans erreur '+JSON.stringify(man.errors));

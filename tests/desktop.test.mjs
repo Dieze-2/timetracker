@@ -1,4 +1,4 @@
-import { chromium } from 'playwright';
+import { chromium } from './browser.mjs';
 // Adresses servies par tests/run.mjs (app courante et version d'origine figée).
 const NEW = process.env.BASE_URL || 'http://localhost:8811/';
 const OLD = process.env.LEGACY_URL || 'http://localhost:8812/';

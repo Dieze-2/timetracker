@@ -1919,28 +1919,29 @@
             calculate();
         }
 
+        // « Hier » en heures centièmes, avec le calcul du compteur : chaque créneau
+        // arrondi au centième ; la différence affichée est donc exactement ce qui
+        // a été ajouté au compteur pour cette journée.
         function renderVeille() {
             const block = document.querySelector('[data-block="veille"]');
             block.hidden = !veille;
             if (!veille) return;
-            const du = parseFloat(veille.tempsDu) || 0, pause = parseFloat(veille.pause) || 0;
             let total = 0;
             const lines = veille.rows.filter(r => r.debut || r.fin).map(r => {
                 let dur = null;
                 if (r.debut && r.fin) {
-                    dur = timeToDecimal(r.fin) - timeToDecimal(r.debut);
-                    if (dur < 0) dur += 24;
+                    dur = creneauCent(r.debut, r.fin);
                     total += dur;
                 }
-                return `<div class="prev-row"><b>${r.debut || '--:--'} – ${r.fin || '--:--'}</b><span>${dur != null ? hm(dur) : 'non fermé'}</span></div>`;
+                return `<div class="prev-row"><b>${r.debut || '--:--'} – ${r.fin || '--:--'}</b><span>${dur != null ? fmtDec(dur, false) + ' h' : 'non fermé'}</span></div>`;
             });
-            const diff = total + pause - du;
+            const diff = total + paramCent(veille.pause) - paramCent(veille.tempsDu);
             const label = dayLabel(veille.date);
             $('prevTitle').textContent = label === 'Hier' ? 'Hier' : `Journée précédente · ${label}`;
             $('prevList').innerHTML = lines.join('');
-            $('prevTotal').textContent = hm(total);
+            $('prevTotal').textContent = fmtDec(total, false) + ' h';
             const d = $('prevDiff');
-            d.textContent = hm(diff, true);
+            d.textContent = fmtDec(diff) + ' h';
             d.className = 'tile-val ' + (diff >= 0 ? 'positive' : 'negative');
         }
 
