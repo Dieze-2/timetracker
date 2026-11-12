@@ -1,4 +1,4 @@
-import { chromium } from 'playwright';
+import { chromium } from './browser.mjs';
 // Adresses servies par tests/run.mjs (app courante et version d'origine figée).
 const NEW = process.env.BASE_URL || 'http://localhost:8811/';
 const OLD = process.env.LEGACY_URL || 'http://localhost:8812/';
@@ -40,6 +40,8 @@ const pay = '<img src=x onerror="window.__pwn=1">';
   const blocked = await p.evaluate(()=>fetch('https://example.com/').then(()=>'parti',()=>'bloqué'));
   ok(blocked==='bloqué', 'fetch externe bloqué par la CSP : '+blocked);
   const cdp = await ctx.newCDPSession(p); const ie = await cdp.send('Page.getInstallabilityErrors');
+    // « in-incognito » décrit le profil de test du navigateur (Chromium récent), pas l'app : ignoré.
+    ie.installabilityErrors = ie.installabilityErrors.filter(e => e.errorId !== 'in-incognito');
   ok(ie.installabilityErrors.length===0, 'toujours installable '+JSON.stringify(ie.installabilityErrors));
   await ctx.close();
 }
